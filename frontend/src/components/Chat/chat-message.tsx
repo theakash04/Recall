@@ -3,7 +3,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ChatMessageProps } from "@/types/chatTypes";
 import { Brain, User } from "lucide-react";
-import ReactMarkdown from "react-markdown";
 import MarkdownRenderer from "../MarkdownRenderer";
 
 export function ChatMessage({ message, isLoading = false }: ChatMessageProps) {

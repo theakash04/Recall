@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { Message } from "@/types/chatTypes";
+import { Message, OpenAIChatResponse } from "@/types/chatTypes";
 import axios from "axios";
 
 type chatStore = {
@@ -9,12 +9,12 @@ type chatStore = {
   clearMessages: () => void;
 };
 
-const aiDummyMsg: Message = {
-  id: Date.now().toString(),
-  content: "Something i am telling you...",
-  role: "assistant",
-  createdAt: new Date(),
-};
+// const aiDummyMsg: Message = {
+//   id: Date.now().toString(),
+//   content: "Something i am telling you...",
+//   role: "assistant",
+//   createdAt: new Date(),
+// };
 
 const useChatStore = create<chatStore>()((set) => ({
   messages: [],
@@ -26,8 +26,7 @@ const useChatStore = create<chatStore>()((set) => ({
     }));
 
     try {
-      console.log("hmm coming");
-      const response = await axios.post(
+      const response = await axios.post<OpenAIChatResponse>(
         "https://api.mistral.ai/v1/chat/completions",
         {
           model: "mistral-large-latest",
@@ -42,10 +41,7 @@ const useChatStore = create<chatStore>()((set) => ({
         }
       );
 
-      console.log(response);
-
       const reply = response?.data.choices[0].message.content;
-      console.log(reply);
 
       const aiMsg: Message = {
         id: Date.now().toString(),
@@ -53,8 +49,6 @@ const useChatStore = create<chatStore>()((set) => ({
         role: "assistant",
         createdAt: new Date(),
       };
-
-      console.log(aiMsg);
 
       set((state) => ({
         messages: [...state.messages, aiMsg],

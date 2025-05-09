@@ -65,7 +65,7 @@ export default function HomePage() {
               later. RecallMark remembers everything so you don't have to.
             </p>
             <Button asChild size="lg" className="px-8 py-6 text-lg">
-              <Link href="/login" className="flex items-center gap-2">
+              <Link href="/signin" className="flex items-center gap-2">
                 Get Started <ArrowRight className="h-5 w-5" />
               </Link>
             </Button>

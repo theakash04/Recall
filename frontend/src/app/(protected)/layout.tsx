@@ -1,4 +1,5 @@
 "use client";
+import Guard from "@/components/CheackUserAuth";
 import { AppSidebar } from "@/components/sidebar/app-sidebar";
 import {
   Breadcrumb,
@@ -29,75 +30,69 @@ export default function Protected({
   let fullPath = "";
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
-        <div className="flex flex-col max-w-[100rem] mx-auto w-full relative">
-          <main className="">
-            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-              <div className="flex items-center gap-2 px-4">
-                <SidebarTrigger className="-ml-1" />
-                <Separator
-                  orientation="vertical"
-                  className="mr-2 data-[orientation=vertical]:h-4"
-                />
-                <Breadcrumb>
-                  <BreadcrumbList>
-                    {/* Always first: Dashboard */}
-                    <BreadcrumbItem>
-                      <BreadcrumbLink href="/dashboard">
-                        Dashboard
-                      </BreadcrumbLink>
-                    </BreadcrumbItem>
+    <Guard>
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
+          <div className="flex flex-col max-w-[100rem] mx-auto w-full relative">
+            <main className="">
+              <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
+                <div className="flex items-center gap-2 px-4">
+                  <SidebarTrigger className="-ml-1" />
+                  <Separator
+                    orientation="vertical"
+                    className="mr-2 data-[orientation=vertical]:h-4"
+                  />
+                  <Breadcrumb>
+                    <BreadcrumbList>
+                      {pathSegments.length > 0 &&
+                        (
+                          <>
+                            <BreadcrumbSeparator />
+                            {pathSegments.map((segment, index) => {
+                              fullPath += `/${segment}`;
+                              const isLast = index === pathSegments.length - 1;
 
-                    {/* Only show separator + dynamic segments if NOT on /dashboard */}
-                    {pathSegments.length > 0 &&
-                      pathSegments[0] !== "dashboard" && (
-                        <>
-                          <BreadcrumbSeparator />
-                          {pathSegments.map((segment, index) => {
-                            fullPath += `/${segment}`;
-                            const isLast = index === pathSegments.length - 1;
+                              return (
+                                <Fragment key={index}>
+                                  <BreadcrumbItem>
+                                    {isLast ? (
+                                      <BreadcrumbPage>
+                                        {formatSegment(segment)}
+                                      </BreadcrumbPage>
+                                    ) : (
+                                      <BreadcrumbLink href={fullPath}>
+                                        {formatSegment(segment)}
+                                      </BreadcrumbLink>
+                                    )}
+                                  </BreadcrumbItem>
+                                  {!isLast && <BreadcrumbSeparator />}
+                                </Fragment>
+                              );
+                            })}
+                          </>
+                        )}
+                    </BreadcrumbList>
+                  </Breadcrumb>
+                </div>
+              </header>
 
-                            return (
-                              <Fragment key={index}>
-                                <BreadcrumbItem>
-                                  {isLast ? (
-                                    <BreadcrumbPage>
-                                      {formatSegment(segment)}
-                                    </BreadcrumbPage>
-                                  ) : (
-                                    <BreadcrumbLink href={fullPath}>
-                                      {formatSegment(segment)}
-                                    </BreadcrumbLink>
-                                  )}
-                                </BreadcrumbItem>
-                                {!isLast && <BreadcrumbSeparator />}
-                              </Fragment>
-                            );
-                          })}
-                        </>
-                      )}
-                  </BreadcrumbList>
-                </Breadcrumb>
-              </div>
-            </header>
-
-            <AnimatePresence mode="wait">
-              <motion.div
-                key={pathname}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.2 }}
-                className="h-[85vh]"
-              >
-                {children}
-              </motion.div>
-            </AnimatePresence>
-          </main>
-        </div>
-      </SidebarInset>
-    </SidebarProvider>
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={pathname}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                  className="h-[85vh]"
+                >
+                  {children}
+                </motion.div>
+              </AnimatePresence>
+            </main>
+          </div>
+        </SidebarInset>
+      </SidebarProvider>
+    </Guard>
   );
 }
 

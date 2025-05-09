@@ -3,17 +3,17 @@
 import { useState, useRef, useEffect, KeyboardEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { ArrowUp, Send } from "lucide-react";
+import { ArrowUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Message } from "@/types/chatTypes";
 
 interface ChatInputProps {
-  onSendMessage: (message: Message) => void;
+  onSendMessageAction: (message: Message) => void;
   isLoading?: boolean;
 }
 
 export function ChatInput({
-  onSendMessage,
+  onSendMessageAction,
   isLoading = false,
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
@@ -30,7 +30,7 @@ export function ChatInput({
 
   const handleSubmit = () => {
     if (message.trim() && !isLoading) {
-      onSendMessage({
+      onSendMessageAction({
         id: Date.now().toString(),
         content: message.trim(),
         role: "user",

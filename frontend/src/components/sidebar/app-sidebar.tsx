@@ -1,5 +1,4 @@
 "use client";
-
 import {
   Bot,
   Command,
@@ -8,10 +7,7 @@ import {
   Send,
   Settings2,
 } from "lucide-react";
-import * as React from "react";
-
 import { NavMain } from "./nav-main";
-
 import { NavUser } from "./nav-user";
 import {
   Sidebar,
@@ -23,46 +19,50 @@ import {
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
 import { NavSecondary } from "./nav-secondary";
-
-const data = {
-  user: {
-    name: "Sky",
-    email: "Sky@example.com",
-    avatar: "Sky",
-  },
-  navMain: [
-    {
-      title: "Dashboard",
-      url: "/dashboard",
-      icon: PieChart,
-    },
-    {
-      title: "Chat",
-      url: "/chat",
-      icon: Bot,
-    },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [{ title: "Danger", url: "/settings/deleteAccount" }],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "Support",
-      url: "#",
-      icon: LifeBuoy,
-    },
-    {
-      title: "Feedback",
-      url: "#",
-      icon: Send,
-    },
-  ],
-};
+import { useUserStore } from "@/store/useStore";
+import { useMemo } from "react";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { userData } = useUserStore();
+
+  const sidebarData = useMemo(() => ({
+    user: {
+      name: userData?.full_name || '',
+      email: userData?.email || '',
+      avatar: userData?.avatar_url || '',
+    },
+    navMain: [
+      {
+        title: "Dashboard",
+        url: "/dashboard",
+        icon: PieChart,
+      },
+      {
+        title: "Chat",
+        url: "/dashboard/chat",
+        icon: Bot,
+      },
+      {
+        title: "Settings",
+        url: "#",
+        icon: Settings2,
+        items: [{ title: "Danger", url: "/dashboard/settings/deleteAccount" }],
+      },
+    ],
+    navSecondary: [
+      {
+        title: "Support",
+        url: "#",
+        icon: LifeBuoy,
+      },
+      {
+        title: "Feedback",
+        url: "#",
+        icon: Send,
+      },
+    ],
+  }), [userData]);
+
   return (
     <Sidebar variant="floating" {...props}>
       <SidebarHeader>
@@ -82,12 +82,13 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </SidebarMenu>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={sidebarData.navMain} />
+        <NavSecondary items={sidebarData.navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={sidebarData.user} />
       </SidebarFooter>
     </Sidebar>
   );
 }
+

@@ -36,7 +36,7 @@ function ChatInner() {
         <ChatMessages messages={messages} isLoading={isLoading} />
       </div>
 
-      <ChatInput onSendMessage={sendMessage} isLoading={isLoading} />
+      <ChatInput onSendMessageAction={sendMessage} isLoading={isLoading} />
     </div>
   );
 }

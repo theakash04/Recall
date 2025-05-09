@@ -15,16 +15,13 @@ import {
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setIsLoading(true);
-    // In a real app, this would trigger Supabase OAuth
-    setTimeout(() => {
-      window.location.href = "/dashboard";
-    }, 1000);
+    window.location.href = `${process.env.NEXT_PUBLIC_SERVER_API}/auth/login`;
   };
 
   return (
-    <div className="flex min-h-screen flex-col bg-background">
+    <div className="flex min-h-screen flex-col">
       <header className="container mx-auto flex h-16 items-center px-4">
         <Button className="bg-secondary hover:bg-secondary/80" size={"lg"}>
           <Link href="/" className="flex items-center gap-2 text-foreground">

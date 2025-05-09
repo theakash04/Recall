@@ -11,3 +11,11 @@ export type ChatMessageProps = {
   message: Message;
   isLoading?: boolean;
 };
+
+export type OpenAIChatResponse = {
+  choices: {
+    message: {
+      content: string;
+    };
+  }[];
+}

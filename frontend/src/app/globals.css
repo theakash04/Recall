@@ -1,8 +1,6 @@
-@import url("highlight.js/styles/github.css") all and
-  (prefers-color-scheme: light);
+@import url("highlight.js/styles/github.css") all and (prefers-color-scheme: light);
 
-@import url("highlight.js/styles/github-dark.css") all and
-  (prefers-color-scheme: dark);
+@import url("highlight.js/styles/github-dark.css") all and (prefers-color-scheme: dark);
 
 @import "tailwindcss";
 @import "tw-animate-css";
@@ -53,15 +51,18 @@
   --radius: 0.625rem;
 
   /* Base */
-  --background: oklch(1 0 0); /* White */
-  --foreground: oklch(0.19 0 0); /* Near-black */
+  --background: oklch(1 0 0);
+  /* White */
+  --foreground: oklch(0.19 0 0);
+  /* Near-black */
   --card: oklch(0.98 0 0);
   --card-foreground: var(--foreground);
   --popover: oklch(0.97 0 0);
   --popover-foreground: var(--foreground);
 
   /* Primary */
-  --primary: oklch(0.58 0.22 264); /* Subtle purple */
+  --primary: oklch(0.58 0.22 264);
+  /* Subtle purple */
   --primary-foreground: oklch(1 0 0);
 
   /* Secondary */
@@ -77,7 +78,8 @@
   --accent-foreground: var(--foreground);
 
   /* Destructive */
-  --destructive: oklch(0.65 0.24 27); /* Red */
+  --destructive: oklch(0.65 0.24 27);
+  /* Red */
   --destructive-foreground: oklch(1 0 0);
 
   /* Borders */
@@ -152,19 +154,23 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground transition-colors duration-300 ease-in-out;
     padding: 0;
     margin: 0;
   }
+
   html {
     padding: 0;
     margin: 0;
   }
 
   ::selection {
-    background-color: var(--foreground); /* pick any color or CSS var */
-    color: var(--background); /* text color when selected */
+    background-color: var(--foreground);
+    /* pick any color or CSS var */
+    color: var(--background);
+    /* text color when selected */
   }
 
   /* for Firefox */
@@ -194,6 +200,7 @@
     width: 100%;
     margin: 1rem 0;
   }
+
   .markdown th,
   .markdown td {
     border: 1px solid var(--border);
