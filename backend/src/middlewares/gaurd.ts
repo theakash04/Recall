@@ -25,7 +25,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
 
     res.cookie("sb_token", newAccessToken, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "prod",
+      secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
       maxAge: expiresIn ? expiresIn * 1000 : 15 * 60 * 1000,
     })
