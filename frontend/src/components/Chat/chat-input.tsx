@@ -18,13 +18,18 @@ export function ChatInput({
 }: ChatInputProps) {
   const [message, setMessage] = useState("");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const initialHeightRef = useRef<number>(0);
 
-  // Auto-resize textarea height based on content
   useEffect(() => {
     if (textareaRef.current) {
-      textareaRef.current.style.height = "0px";
+      textareaRef.current.style.height = `${initialHeightRef.current}px`;
       const scrollHeight = textareaRef.current.scrollHeight;
-      textareaRef.current.style.height = scrollHeight + "px";
+      const maxHeight = 200;
+
+      textareaRef.current.style.height = `${Math.min(
+        scrollHeight,
+        maxHeight
+      )}px`;
     }
   }, [message]);
 
@@ -37,9 +42,8 @@ export function ChatInput({
         createdAt: new Date(),
       });
       setMessage("");
-      // Reset textarea height
       if (textareaRef.current) {
-        textareaRef.current.style.height = "56px";
+        textareaRef.current.style.height = `48px`;
       }
     }
   };
@@ -66,9 +70,10 @@ export function ChatInput({
         onKeyDown={handleKeyDown}
         placeholder="Type a message..."
         autoFocus={true}
+        rows={1}
         className={cn(
-          "min-h-max max-h-[200px] resize-none rounded-xl p-3 pr-12",
-          "border-muted bg-background",
+          "min-h-[40px] max-h-[200px] resize-none rounded-xl p-3 pr-12",
+          "border-muted bg-background overflow-hidden",
           "focus-visible:ring-1 focus-visible:ring-primary/30",
           "transition-all duration-200"
         )}

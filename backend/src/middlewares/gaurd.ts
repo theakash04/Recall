@@ -5,6 +5,14 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
   let access_token: string = req.cookies?.sb_token;
   const refresh_token: string = req.cookies?.sb_refresh;
 
+  if (!access_token || !refresh_token) {
+    res.status(401).json({
+      status: 401,
+      message: "No token provided!"
+    })
+    return;
+  }
+
   let { data: userData, error } = await supabase.auth.getUser(access_token);
 
   if (error && refresh_token) {
@@ -18,6 +26,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
         message: "unable to refresh Token",
         error: refreshError
       })
+      return;
     }
     const newAccessToken = refreshData.session?.access_token;
     const expiresIn = refreshData.session?.expires_in;
@@ -38,6 +47,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
         status: 401,
         message: "Authentication Failed!"
       })
+      return;
     }
 
     userData = result.data;
@@ -48,6 +58,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
       status: 401,
       message: "Not Authenticated!"
     })
+    return;
   }
 
   // Attatch user to request for downstream handler

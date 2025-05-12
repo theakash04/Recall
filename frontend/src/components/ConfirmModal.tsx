@@ -18,7 +18,7 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   <AnimatePresence>
     {open && (
       <motion.div
-        className="absolute inset-0 flex items-center justify-center w-full mx-auto backdrop-blur-lg"
+        className="absolute inset-0 flex items-center justify-center w-full mx-auto backdrop-blur-xs"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}

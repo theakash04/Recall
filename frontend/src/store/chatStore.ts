@@ -40,8 +40,11 @@ const useChatStore = create<chatStore>()((set) => ({
           },
         }
       );
+      let reply = "Server is busy, please try again later";
 
-      const reply = response?.data.choices[0].message.content;
+      if (response.status == 200) {
+        reply = response?.data.choices[0].message.content;
+      }
 
       const aiMsg: Message = {
         id: Date.now().toString(),

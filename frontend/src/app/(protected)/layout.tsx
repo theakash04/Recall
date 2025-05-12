@@ -1,6 +1,6 @@
 "use client";
-import Guard from "@/components/CheackUserAuth";
-import { AppSidebar } from "@/components/sidebar/app-sidebar";
+import FullScreenLoader from "@/components/Loading";
+import { Sidebar } from "@/components/sidebar/Sidebar";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -9,15 +9,18 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
+import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
-import {
-  SidebarInset,
-  SidebarProvider,
-  SidebarTrigger,
-} from "@/components/ui/sidebar";
-import { AnimatePresence, motion } from "motion/react";
+import { useSidebarStore } from "@/store/sideBarStore";
+import { useUserStore } from "@/store/useStore";
+import { user } from "@/types/userTypes";
+import axios from "axios";
+import { PanelRight } from "lucide-react";
 import { usePathname } from "next/navigation";
-import { Fragment } from "react";
+import nProgress from "nprogress";
+import "nprogress/nprogress.css";
+import { Fragment, Suspense, useEffect } from "react";
+import { toast } from "sonner";
 
 export default function Protected({
   children,
@@ -26,73 +29,100 @@ export default function Protected({
 }>) {
   const pathname = usePathname();
   const pathSegments = pathname.split("/").filter((seg) => seg);
+  const { setUser, userData } = useUserStore();
+  const { toggleSidebar } = useSidebarStore();
 
   let fullPath = "";
 
+  useEffect(() => {
+    nProgress.start();
+    nProgress.done();
+    console.log("Pathname changed:", pathname);
+  }, [pathname]);
+
+  async function fetchUser() {
+    try {
+      const res = await axios.get<user>(
+        `${process.env.NEXT_PUBLIC_SERVER_API}/auth/get-user`,
+        {
+          withCredentials: true,
+        }
+      );
+      if (res.status === 200) {
+        setUser(res.data);
+      }
+    } catch (err) {
+      console.log("Error fetching user data", err);
+      toast.error("Error fetching user data", {
+        description: "Please Login.",
+      });
+    }
+  }
+
+  useEffect(() => {
+    if (!userData) {
+      fetchUser();
+    }
+  }, [userData]);
+
+  if (!userData) {
+    return <FullScreenLoader />;
+  }
+
   return (
-    <Guard>
-      <SidebarProvider>
-        <AppSidebar />
-        <SidebarInset>
-          <div className="flex flex-col max-w-[100rem] mx-auto w-full relative">
-            <main className="">
-              <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12">
-                <div className="flex items-center gap-2 px-4">
-                  <SidebarTrigger className="-ml-1" />
-                  <Separator
-                    orientation="vertical"
-                    className="mr-2 data-[orientation=vertical]:h-4"
-                  />
-                  <Breadcrumb>
-                    <BreadcrumbList>
-                      {pathSegments.length > 0 &&
-                        (
-                          <>
-                            <BreadcrumbSeparator />
-                            {pathSegments.map((segment, index) => {
-                              fullPath += `/${segment}`;
-                              const isLast = index === pathSegments.length - 1;
+    <div className="flex min-h-screen relative overflow-auto scrollbar">
+      <Sidebar />
+      <div className="flex flex-col max-w-[100rem] mx-auto w-full">
+        <main className="">
+          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 bg-background">
+            <div className="flex items-center gap-2 px-4">
+              <Button onClick={() => toggleSidebar()} variant={"ghost"}>
+                <PanelRight />
+              </Button>
+              <Separator
+                orientation="vertical"
+                className="mr-2 data-[orientation=vertical]:h-4"
+              />
+              <Breadcrumb>
+                <BreadcrumbList>
+                  {pathSegments.length > 0 && (
+                    <>
+                      <BreadcrumbSeparator />
+                      {pathSegments.map((segment, index) => {
+                        fullPath += `/${segment}`;
+                        const isLast = index === pathSegments.length - 1;
 
-                              return (
-                                <Fragment key={index}>
-                                  <BreadcrumbItem>
-                                    {isLast ? (
-                                      <BreadcrumbPage>
-                                        {formatSegment(segment)}
-                                      </BreadcrumbPage>
-                                    ) : (
-                                      <BreadcrumbLink href={fullPath}>
-                                        {formatSegment(segment)}
-                                      </BreadcrumbLink>
-                                    )}
-                                  </BreadcrumbItem>
-                                  {!isLast && <BreadcrumbSeparator />}
-                                </Fragment>
-                              );
-                            })}
-                          </>
-                        )}
-                    </BreadcrumbList>
-                  </Breadcrumb>
-                </div>
-              </header>
-
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={pathname}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
-                  className="h-[85vh]"
-                >
-                  {children}
-                </motion.div>
-              </AnimatePresence>
-            </main>
-          </div>
-        </SidebarInset>
-      </SidebarProvider>
-    </Guard>
+                        return (
+                          <Fragment key={index}>
+                            <BreadcrumbItem>
+                              {isLast ? (
+                                <BreadcrumbPage>
+                                  {formatSegment(segment)}
+                                </BreadcrumbPage>
+                              ) : (
+                                <BreadcrumbLink href={fullPath}>
+                                  {formatSegment(segment)}
+                                </BreadcrumbLink>
+                              )}
+                            </BreadcrumbItem>
+                            {!isLast && <BreadcrumbSeparator />}
+                          </Fragment>
+                        );
+                      })}
+                    </>
+                  )}
+                </BreadcrumbList>
+              </Breadcrumb>
+            </div>
+          </header>
+          <Suspense fallback={<FullScreenLoader />}>
+            <div key={pathname} className="h-[85vh]">
+              {children}
+            </div>
+          </Suspense>
+        </main>
+      </div>
+    </div>
   );
 }
 

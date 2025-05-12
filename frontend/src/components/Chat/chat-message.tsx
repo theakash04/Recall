@@ -1,9 +1,7 @@
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { ChatMessageProps } from "@/types/chatTypes";
-import { Brain, User } from "lucide-react";
-import MarkdownRenderer from "../MarkdownRenderer";
+import MarkdownRenderer from "./MarkdownRenderer";
 
 export function ChatMessage({ message, isLoading = false }: ChatMessageProps) {
   const isUser = message.role === "user";
@@ -11,56 +9,40 @@ export function ChatMessage({ message, isLoading = false }: ChatMessageProps) {
   return (
     <div
       className={cn(
-        "flex w-full items-start gap-4 py-4",
+        "flex w-full items-start gap-4 py-4 px-2 sm:px-4", // Added horizontal padding
         isUser ? "justify-end" : "justify-start"
       )}
     >
-      {!isUser && (
-        <Avatar className="h-8 w-8 bg-primary/10">
-          <AvatarFallback className="text-primary">
-            <Brain className="h-4 w-4" />
-          </AvatarFallback>
-        </Avatar>
-      )}
-
       <div
         className={cn(
-          "flex flex-col max-w-[80%] sm:max-w-[70%] items-center justify-center",
+          "flex flex-col w-full max-w-[99%]", // Constrain width
           isUser ? "items-end" : "items-start"
         )}
       >
         <div
           className={cn(
-            "rounded-xl max-w-[700px]",
+            "rounded-xl",
             isUser
-              ? "bg-primary text-primary-foreground py-3 px-2"
-              : "bg-muted text-foreground px-4 py-3",
-            "shadow-sm"
+              ? "bg-accent text-foreground py-2 px-4 md:w-max w-full"
+              : "text-foreground px-0 py-3 w-full max-w-[90%]",
+            "shadow-sm w-max"
           )}
         >
           {isLoading ? (
-            <Skeleton className="h-4 w-[250px]" />
+            <Skeleton className="bg-transparent" />
           ) : (
-            <div className="px-5 flex flex-col gap-4 markdown">
+            <div
+              className={cn(
+                "flex flex-col gap-4 markdown overflow-x-hidden",
+                isUser ? "text-end" : "text-start",
+              )}
+            >
               <MarkdownRenderer content={message.content} />
             </div>
           )}
         </div>
-        <span className="text-xs text-muted-foreground mt-1 px-1">
-          {message.createdAt.toLocaleTimeString([], {
-            hour: "2-digit",
-            minute: "2-digit",
-          })}
-        </span>
+        {/* create option to copy text */}
       </div>
-
-      {isUser && (
-        <Avatar className="h-8 w-8 bg-primary/10">
-          <AvatarFallback className="text-primary">
-            <User className="h-4 w-4" />
-          </AvatarFallback>
-        </Avatar>
-      )}
     </div>
   );
 }

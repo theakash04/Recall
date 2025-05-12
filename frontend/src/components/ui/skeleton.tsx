@@ -7,7 +7,7 @@ function Skeleton({ className, ...props }: React.ComponentProps<"div">) {
       className={cn("bg-accent animate-pulse rounded-md flex items-center", className)}
       {...props}
     >
-      thinking...
+      <div className="w-5 h-5 bg-foreground rounded-full" />
     </div>
   );
 }

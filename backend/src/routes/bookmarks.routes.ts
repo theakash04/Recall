@@ -3,11 +3,11 @@ import { user } from "../types/userTypes";
 
 const router = Router();
 
-router.get("/add-bookmarks", async (req: Request, res: Response) => {
+router.post("/add-bookmark", async (req: Request, res: Response) => {
   const user = (req as any).user as user;
+  const url = req.body()
+  console.log(url);
 
-  
-  
 
   res.json({
     message: "bookmark added!"

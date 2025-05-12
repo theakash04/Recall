@@ -21,16 +21,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} antialiased scrollbar`}>
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-        >
-          <main>
-            {children}
-          </main>
+        <ThemeProvider attribute="class" defaultTheme="dark">
+          <main>{children}</main>
           <Toaster />
         </ThemeProvider>
       </body>
-    </html >
+    </html>
   );
 }

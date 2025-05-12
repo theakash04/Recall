@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { pinoHttp } from 'pino-http';
 import logger from './utils/logger';
+import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
@@ -13,6 +14,7 @@ const origins = ["http://localhost:3000"]
 app.use(pinoHttp({
   logger
 }))
+app.use(cookieParser())
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cors({ origin: origins, credentials: true }));
