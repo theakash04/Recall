@@ -1,0 +1,41 @@
+{
+  "name": "@repo/database",
+  "version": "0.0.0",
+  "private": true,
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "tsc --watch",
+    "build": "tsc",
+    "db:check": "drizzle-kit check",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "ts-node ./migrate.ts"
+  },
+  "devDependencies": {
+    "@repo/typescript-config": "workspace:*",
+    "drizzle-kit": "^0.31.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.8.3"
+  },
+  "exports": {
+    "./schema": {
+      "require": "./dist/schema.js",
+      "import": "./dist/schema.js",
+      "default": "./dist/schema.js"
+    },
+    "./database": {
+      "require": "./dist/database.js",
+      "import": "./dist/database.js",
+      "default": "./dist/database.js"
+    },
+    "./types": {
+      "require": "./dist/types.js",
+      "import": "./dist/types.js",
+      "default": "./dist/types.js"
+    }
+  },
+  "dependencies": {
+    "dotenv": "^16.5.0",
+    "drizzle-orm": "^0.43.1",
+    "postgres": "^3.4.7"
+  }
+}
