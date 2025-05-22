@@ -1,11 +1,12 @@
 import { Request, Response, Router } from "express";
-import { addUrlSchema } from "../types/zod/bookmarks";
+import { addUrlSchema, getQuerySchema } from "../types/zod/bookmarks";
 import isUrlScrapable from "../utils/urlScrapableChecker";
 import * as schema from "@repo/database/schema";
 import { db } from "@repo/database/database";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, ilike, sql } from "drizzle-orm";
 import canonicalize from "../utils/urlCanonicalizer";
 import { addJob } from "../utils/jobScheduler";
+import { url_search } from "../services/searchServices";
 
 const router: Router = Router();
 
@@ -121,27 +122,32 @@ router.post("/add-bookmark", async (req: Request, res: Response) => {
 
 router.get("/search", async (req: Request, res: Response) => {
   const user = (req as any).user;
-  const query = req.query.data;
+
+  // pass to zod for validation
+  const queryParams = getQuerySchema.safeParse({
+    query: req.query.string || req.query.url,
+    match_count: req.query.match_count,
+    match_threshold: req.query.match_threshold,
+  });
+
+  if (!queryParams.success) {
+    res.status(400).json({
+      error: queryParams.error.format(),
+    });
+    return;
+  }
+  const { query, match_count, match_threshold } = queryParams.data;
+
   // implement logic of search with url
   try {
     const isURL = new URL(query as string);
 
     if (isURL) {
       // create a sep function for this
-      const results = await db.execute(sql`
-        SELECT 
-          ub.id AS "userBookmarkId",
-          ub.url,
-          gb.id AS "globalBookmarkId",
-          gjb.status AS "jobStatus",
-          gjb.updated_at AS "jobUpdatedAt",
-          gjb.error AS "jobError"
-        FROM users_bookmarks ub
-        LEFT JOIN global_bookmarks gb ON ub.global_bookmark_id = gb.id
-        LEFT JOIN global_jobs_bookmarks gjb ON gb.id = gjb.global_bookmark_id
-        WHERE ub.user_id = ${user.id}
-          AND ub.url ILIKE '%' || ${query} || '%'
-      `);
+      const results = await url_search({
+        query: query as string,
+        userId: user.id,
+      });
 
       res.status(200).json({
         data: results,
@@ -162,31 +168,28 @@ router.get("/get-all-bookmarks", async (req: Request, res: Response) => {
   const user = (req as any).user;
 
   try {
-    const bookmarks = await db.execute(
-      sql`
-        SELECT 
-          ub.id as "userBookmarkId",
-          ub.url,
-          gb.id as "globalBookmarksId",
-          js.status as "jobStatus",
-          js.error as "jobError",
-          js.updated_at as "jobUpdatedAt",
-          ub.created_at as "createdAt"
-        FROM users_bookmarks ub
-        LEFT JOIN global_bookmarks gb ON ub.global_bookmark_id = gb.id
-        LEFT JOIN LATERAL (
-          SELECT DISTINCT ON (global_bookmark_id)
-            global_bookmark_id,
-            status,
-            error,
-            updated_at
-          FROM global_jobs_bookmarks
-          WHERE global_bookmark_id = gb.id
-          ORDER BY updated_at DESC
-        ) js ON true
-        WHERE ub.user_id = ${user.id}
-      `
-    );
+    const bookmarks = await db
+      .select({
+        userBookmarkId: schema.usersBookmarks.id,
+        url: schema.usersBookmarks.url,
+        globalBookmarksId: schema.globalBookmarks.id,
+        jobStatus: schema.globalJobsBookmarks.status,
+        jobError: schema.globalJobsBookmarks.error,
+        createdAt: schema.usersBookmarks.createdAt,
+      })
+      .from(schema.usersBookmarks)
+      .where(eq(schema.usersBookmarks.userId, user.id))
+      .leftJoin(
+        schema.globalBookmarks,
+        eq(schema.usersBookmarks.globalBookmarkId, schema.globalBookmarks.id)
+      )
+      .leftJoin(
+        schema.globalJobsBookmarks,
+        eq(
+          schema.globalBookmarks.id,
+          schema.globalJobsBookmarks.globalBookmarkId
+        )
+      );
 
     res.status(200).json({
       data: bookmarks,

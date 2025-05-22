@@ -7,33 +7,55 @@ import {
   usersBookmarks,
   vectorEmbedding,
 } from "@repo/database/schema";
-import { and, cosineDistance, desc, eq, gt, sql } from "drizzle-orm";
+import { and, cosineDistance, desc, eq, gt, ilike, sql } from "drizzle-orm";
+import {
+  hybridParams,
+  KeywordSearchParams,
+  searchResult,
+  semanticSearchparams,
+  urlSearchParams,
+} from "../types/searchTypes";
 
-type KeywordSearchParams = {
-  query: string;
-  userId: string;
-  match_count: number;
-};
+/**
+ * Performs a URL search on the bookmarks database.
+ * @param {urlSearchParams} params - The parameters for the search.
+ * @returns {Promise<any>} - The search results.
+ */
+async function url_search(params: urlSearchParams) {
+  const result = await db
+    .select({
+      bookmarkId: usersBookmarks.id,
+      url: usersBookmarks.url,
+      title: globalBookmarks.title,
+      jobStatus: globalJobsBookmarks.status,
+    })
+    .from(usersBookmarks)
+    .where(
+      and(
+        eq(usersBookmarks.userId, params.userId),
+        ilike(usersBookmarks.url, `%${params.query}%`) // partial match (case-insensitive)
+      )
+    )
+    .leftJoin(
+      globalBookmarks,
+      eq(usersBookmarks.globalBookmarkId, globalBookmarks.id)
+    )
+    .leftJoin(
+      globalJobsBookmarks,
+      eq(globalBookmarks.id, globalJobsBookmarks.globalBookmarkId)
+    );
 
-type semanticSearchparams = Omit<KeywordSearchParams, "query"> & {
-  queryEmbedding: number[];
-  match_threshold: number;
-};
+  return result;
+}
 
-type hybridParmas = KeywordSearchParams &
-  semanticSearchparams & {
-    rrf_contant?: number;
-  };
-
-type rrfFusedArr = {
-  bookmarkId: string;
-  url: string;
-  title: string;
-  jobStatus: string;
-  rrfScore: number;
-};
-
-export async function keyword_search(params: KeywordSearchParams) {
+/**
+ * Performs a keyword search on the bookmarks database.
+ * @param {KeywordSearchParams} params - The parameters for the search.
+ * @returns {Promise<any>} - The search results.
+ */
+async function keyword_search(
+  params: KeywordSearchParams
+): Promise<searchResult[]> {
   const match_count = params.match_count || 8;
 
   const query = sql`plainto_tsquery('english', ${params.query})`;
@@ -43,7 +65,9 @@ export async function keyword_search(params: KeywordSearchParams) {
       url: usersBookmarks.url,
       title: globalBookmarks.title,
       jobStatus: globalJobsBookmarks.status,
-      rank: sql`ts_rank(${splitContent.contentSearch}, ${query})`.as("rank"),
+      rank: sql`ts_rank(${splitContent.contentSearch}, ${query})`.mapWith(
+        (value) => value as number
+      ),
     })
     .from(usersBookmarks)
     .innerJoin(
@@ -74,7 +98,14 @@ export async function keyword_search(params: KeywordSearchParams) {
   return result;
 }
 
-export async function semantic_search(params: semanticSearchparams) {
+/**
+ * Performs a semantic search on the bookmarks database.
+ * @param {semanticSearchparams} params - The parameters for the search.
+ * @returns {Promise<any>} - The search results.
+ */
+async function semantic_search(
+  params: semanticSearchparams
+): Promise<searchResult[]> {
   const match_count = params.match_count || 8;
   const match_threshold = params.match_threshold || 0.5;
   const similarity = sql<number>`1 - (${cosineDistance(vectorEmbedding.embedding, params.queryEmbedding)})`;
@@ -120,8 +151,13 @@ export async function semantic_search(params: semanticSearchparams) {
   return result;
 }
 
-export async function hybrid_search(params: hybridParmas) {
-  const k = params.rrf_contant ?? 60;
+/**
+ * Performs a hybrid search combining keyword and semantic search.
+ * @param {hybridParams} params - The parameters for the hybrid search.
+ * @returns {Promise<searchResult>} - The search results.
+ */
+async function hybrid_search(params: hybridParams): Promise<searchResult[]> {
+  const k = params.rrf_constant ?? 60;
 
   // starting both queries in parallel
   const [kwHits, semHits] = await Promise.all([
@@ -163,7 +199,7 @@ export async function hybrid_search(params: hybridParmas) {
   const allIds = new Set<string>([...kwRank.keys(), ...semRank.keys()]);
 
   // rrf score compute
-  const fused: Array<rrfFusedArr> = [];
+  const fused: Array<searchResult> = [];
 
   // full record from lists
   for (const id of allIds) {
@@ -180,12 +216,7 @@ export async function hybrid_search(params: hybridParmas) {
     const score = 1 / (k + rankKw) + 1 / (k + rankSem);
 
     // metadata
-    const rec: {
-      bookmarkId: string;
-      url: string;
-      title: string;
-      jobStatus: string;
-    } = kwRec ?? semRec!;
+    const rec: searchResult = kwRec ?? semRec!;
     fused.push({
       bookmarkId: id,
       url: rec.url,
@@ -196,6 +227,8 @@ export async function hybrid_search(params: hybridParmas) {
   }
 
   // sort and trim
-  fused.sort((a, b) => b.rrfScore - a.rrfScore);
+  fused.sort((a, b) => b.rrfScore! - a.rrfScore!);
   return fused.slice(0, params.match_count);
 }
+
+export { keyword_search, semantic_search, url_search, hybrid_search };

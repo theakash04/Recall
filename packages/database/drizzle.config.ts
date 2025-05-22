@@ -1,10 +1,10 @@
-import { Config } from "drizzle-kit";
+import { defineConfig } from "drizzle-kit";
 import process from "node:process";
 import dotenv from "dotenv";
 
 dotenv.config();
 
-export default {
+export default defineConfig({
   dialect: "postgresql",
   schema: "./schema.ts",
   out: "./drizzle",
@@ -12,4 +12,4 @@ export default {
   dbCredentials: {
     url: process.env.SUPABASE_DB_URL || "",
   },
-} satisfies Config;
+});

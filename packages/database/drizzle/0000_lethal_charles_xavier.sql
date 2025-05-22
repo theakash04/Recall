@@ -1,14 +1,4 @@
-DO $$
-BEGIN
-  IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'status') THEN
-    CREATE TYPE status AS ENUM ('pending', 'scraped', 'embedded', 'completed', 'failed');
-  END IF;
-END$$;
---> statement-breakpoint
-CREATE TABLE "auth"."users" (
-	"id" uuid PRIMARY KEY NOT NULL
-);
---> statement-breakpoint
+CREATE TYPE "public"."status" AS ENUM('pending', 'scraped', 'embedded', 'completed', 'failed');--> statement-breakpoint
 CREATE TABLE "bookmark_content" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"content" text NOT NULL

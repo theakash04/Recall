@@ -2,18 +2,57 @@ import { z } from "zod";
 
 export const getQuerySchema = z
   .object({
-    url: z
-      .string()
-      .url()
-      .regex(/^https:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/)
+    query: z.union([
+      z
+        .string()
+        .url()
+        .regex(/^https:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/),
+      z.string(),
+    ]),
+    match_count: z
+      .number()
+      .min(1, { message: "Minimum match count should be 1" })
+      .max(20, { message: "Maximum match count should be 20" })
       .optional(),
-    string: z.string().min(5).optional(),
+    match_threshold: z
+      .number()
+      .min(0, { message: "Minimum match threshold should be 0" })
+      .max(1, { message: "Maximum match threshold should be 1" })
+      .optional(),
+    search_type: z
+      .enum(["keyword", "semantic", "hybrid", "url"])
+      .default("keyword"),
   })
-  .refine((data) => data.url || data.string, {
-    message: "Either 'url' or 'string' must be provided.",
-  })
-  .refine((data) => !(data.url && data.string), {
-    message: "Provide only one of 'url' or 'string', not both.",
+  .superRefine((data, ctx) => {
+    typeof data.query as string;
+
+    // check if the query is a valid URL
+    let isUrl = false;
+    try {
+      const url = new URL(data.query);
+      isUrl = url.protocol === "https:";
+      data.search_type = "url";
+    } catch {
+      isUrl = false;
+    }
+
+    const isSemanticOrHybrid =
+      data.search_type === "semantic" || data.search_type === "hybrid";
+
+    if (!isUrl && isSemanticOrHybrid && data.query.length < 10) {
+      ctx.addIssue({
+        path: ["query"],
+        message:
+          "For semantic or hybrid search, query must be at least 10 characters long.",
+        code: z.ZodIssueCode.custom,
+      });
+    } else if (!isUrl && data.query.length < 5) {
+      ctx.addIssue({
+        path: ["query"],
+        message: "Query must be at least 5 characters long.",
+        code: z.ZodIssueCode.custom,
+      });
+    }
   });
 
 export const addUrlSchema = z.object({

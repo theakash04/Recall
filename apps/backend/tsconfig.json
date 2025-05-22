@@ -2,10 +2,11 @@
   "extends": "@repo/typescript-config/base.json",
   "compilerOptions": {
     "target": "es6",
-    "module": "NodeNext",
+    "module": "ES2015",
     "rootDir": "./src",
     "outDir": "./dist",
     "esModuleInterop": true,
+    "moduleResolution": "bundler",
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true
