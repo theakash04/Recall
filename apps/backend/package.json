@@ -6,7 +6,7 @@
   "scripts": {
     "build": "tsc",
     "start": "npm run build && node dist/index.js",
-    "dev": "nodemon --ext ts --exec 'ts-node src/index.ts'",
+    "dev": "nodemon --ext ts --exec ts-node src/index.ts",
     "lint": "echo \"Error: no lint specified\" && exit 1",
     "check-types": "tsc --noEmit"
   },
@@ -26,6 +26,7 @@
     "@types/express": "^5.0.1",
     "@types/node": "^22.15.12",
     "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
     "typescript": "^5.8.3"
   },
   "dependencies": {
@@ -36,6 +37,7 @@
     "bullmq": "^5.52.2",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "database": "^0.0.2",
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.43.1",
     "express": "^5.1.0",

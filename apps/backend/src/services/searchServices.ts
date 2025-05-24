@@ -22,28 +22,17 @@ import {
  * @returns {Promise<any>} - The search results.
  */
 async function url_search(params: urlSearchParams) {
-  const result = await db
-    .select({
-      bookmarkId: usersBookmarks.id,
-      url: usersBookmarks.url,
-      title: globalBookmarks.title,
-      jobStatus: globalJobsBookmarks.status,
-    })
-    .from(usersBookmarks)
-    .where(
-      and(
-        eq(usersBookmarks.userId, params.userId),
-        ilike(usersBookmarks.url, `%${params.query}%`) // partial match (case-insensitive)
-      )
-    )
-    .leftJoin(
-      globalBookmarks,
-      eq(usersBookmarks.globalBookmarkId, globalBookmarks.id)
-    )
-    .leftJoin(
-      globalJobsBookmarks,
-      eq(globalBookmarks.id, globalJobsBookmarks.globalBookmarkId)
-    );
+  const result = await db.execute(sql`
+  SELECT 
+    ub.id AS "bookmarkId",
+    ub.url,
+    gb.title,
+    gjb.status AS "jobStatus"
+  FROM users_bookmarks ub
+  LEFT JOIN global_bookmarks gb ON ub.global_bookmark_id = gb.id
+  LEFT JOIN global_jobs_bookmarks gjb ON gb.id = gjb.global_bookmark_id
+  WHERE ub.user_id = ${params.userId} AND ub.url ILIKE ${`%${params.query}%`}
+`);
 
   return result;
 }
@@ -51,7 +40,7 @@ async function url_search(params: urlSearchParams) {
 /**
  * Performs a keyword search on the bookmarks database.
  * @param {KeywordSearchParams} params - The parameters for the search.
- * @returns {Promise<any>} - The search results.
+ * @returns {Promise<searchResult>} - The search results.
  */
 async function keyword_search(
   params: KeywordSearchParams
@@ -59,41 +48,23 @@ async function keyword_search(
   const match_count = params.match_count || 8;
 
   const query = sql`plainto_tsquery('english', ${params.query})`;
-  const result = await db
-    .select({
-      bookmarkId: usersBookmarks.id,
-      url: usersBookmarks.url,
-      title: globalBookmarks.title,
-      jobStatus: globalJobsBookmarks.status,
-      rank: sql`ts_rank(${splitContent.contentSearch}, ${query})`.mapWith(
-        (value) => value as number
-      ),
-    })
-    .from(usersBookmarks)
-    .innerJoin(
-      globalBookmarks,
-      eq(usersBookmarks.globalBookmarkId, globalBookmarks.id)
-    )
-    .innerJoin(
-      bookmarkContent,
-      eq(globalBookmarks.bookmarkContentId, bookmarkContent.id)
-    )
-    .innerJoin(
-      splitContent,
-      eq(bookmarkContent.id, splitContent.bookmarkContentId)
-    )
-    .innerJoin(
-      globalJobsBookmarks,
-      eq(globalJobsBookmarks.globalBookmarkId, globalBookmarks.id)
-    )
-    .where(
-      and(
-        eq(usersBookmarks.userId, params.userId),
-        sql`${splitContent.contentSearch} @@ ${query}`
-      )
-    )
-    .orderBy(desc(sql`ts_rank(${splitContent.contentSearch}, ${query})`))
-    .limit(match_count);
+  const result = (await db.execute(sql`
+  SELECT 
+    ub.id AS "bookmarkId",
+    ub.url,
+    gb.title,
+    gjb.status AS "jobStatus",
+    ts_rank(sc.content_search, ${query}) AS rank
+  FROM users_bookmarks ub
+  INNER JOIN global_bookmarks gb ON ub.global_bookmark_id = gb.id
+  INNER JOIN bookmark_content bc ON gb.bookmark_content_id = bc.id
+  INNER JOIN split_content sc ON bc.id = sc.bookmark_content_id
+  INNER JOIN global_jobs_bookmarks gjb ON gjb.global_bookmark_id = gb.id
+  WHERE ub.user_id = ${params.userId}
+    AND sc.content_search @@ ${query}
+  ORDER BY ts_rank(sc.content_search, ${query}) DESC
+  LIMIT ${match_count}
+`)) as unknown as searchResult[];
 
   return result;
 }
@@ -101,7 +72,7 @@ async function keyword_search(
 /**
  * Performs a semantic search on the bookmarks database.
  * @param {semanticSearchparams} params - The parameters for the search.
- * @returns {Promise<any>} - The search results.
+ * @returns {Promise<searchResult>} - The search results.
  */
 async function semantic_search(
   params: semanticSearchparams
@@ -110,43 +81,24 @@ async function semantic_search(
   const match_threshold = params.match_threshold || 0.5;
   const similarity = sql<number>`1 - (${cosineDistance(vectorEmbedding.embedding, params.queryEmbedding)})`;
 
-  const result = await db
-    .select({
-      bookmarkId: usersBookmarks.id,
-      url: usersBookmarks.url,
-      title: globalBookmarks.title,
-      jobStatus: globalJobsBookmarks.status,
-      similarity,
-    })
-    .from(usersBookmarks)
-    .innerJoin(
-      globalBookmarks,
-      eq(usersBookmarks.globalBookmarkId, globalBookmarks.id)
-    )
-    .innerJoin(
-      bookmarkContent,
-      eq(globalBookmarks.bookmarkContentId, bookmarkContent.id)
-    )
-    .innerJoin(
-      splitContent,
-      eq(bookmarkContent.id, splitContent.bookmarkContentId)
-    )
-    .innerJoin(
-      globalJobsBookmarks,
-      eq(globalJobsBookmarks.globalBookmarkId, globalBookmarks.id)
-    )
-    .innerJoin(
-      vectorEmbedding,
-      eq(splitContent.id, vectorEmbedding.splitContentId)
-    )
-    .where(
-      and(
-        eq(usersBookmarks.userId, params.userId),
-        gt(similarity, match_threshold)
-      )
-    )
-    .orderBy((t) => desc(t.similarity))
-    .limit(match_count);
+  const result = (await db.execute(sql`
+  SELECT 
+    ub.id AS "bookmarkId",
+    ub.url,
+    gb.title,
+    gjb.status AS "jobStatus",
+    ve.similarity
+  FROM users_bookmarks ub
+  INNER JOIN global_bookmarks gb ON ub.global_bookmark_id = gb.id
+  INNER JOIN bookmark_content bc ON gb.bookmark_content_id = bc.id
+  INNER JOIN split_content sc ON bc.id = sc.bookmark_content_id
+  INNER JOIN global_jobs_bookmarks gjb ON gjb.global_bookmark_id = gb.id
+  INNER JOIN vector_embedding ve ON sc.id = ve.split_content_id
+  WHERE ub.user_id = ${params.userId}
+    AND ve.similarity > ${match_threshold}
+  ORDER BY ve.similarity DESC
+  LIMIT ${match_count}
+`)) as unknown as searchResult[];
 
   return result;
 }

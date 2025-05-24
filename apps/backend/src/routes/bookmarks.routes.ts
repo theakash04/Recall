@@ -168,28 +168,22 @@ router.get("/get-all-bookmarks", async (req: Request, res: Response) => {
   const user = (req as any).user;
 
   try {
-    const bookmarks = await db
-      .select({
-        userBookmarkId: schema.usersBookmarks.id,
-        url: schema.usersBookmarks.url,
-        globalBookmarksId: schema.globalBookmarks.id,
-        jobStatus: schema.globalJobsBookmarks.status,
-        jobError: schema.globalJobsBookmarks.error,
-        createdAt: schema.usersBookmarks.createdAt,
-      })
-      .from(schema.usersBookmarks)
-      .where(eq(schema.usersBookmarks.userId, user.id))
-      .leftJoin(
-        schema.globalBookmarks,
-        eq(schema.usersBookmarks.globalBookmarkId, schema.globalBookmarks.id)
-      )
-      .leftJoin(
-        schema.globalJobsBookmarks,
-        eq(
-          schema.globalBookmarks.id,
-          schema.globalJobsBookmarks.globalBookmarkId
-        )
-      );
+
+    const bookmarks = await db.execute(sql`
+      SELECT 
+        ub.id AS "userBookmarkId",
+        ub.url,
+        gb.id AS "globalBookmarksId",
+        gjb.status AS "jobStatus",
+        gjb.error AS "jobError",
+        ub.created_at AS "createdAt"
+        FROM users_bookmarks ub
+        LEFT JOIN global_bookmarks gb 
+        ON ub.global_bookmark_id = gb.id
+        LEFT JOIN global_jobs_bookmarks gjb 
+        ON gb.id = gjb.global_bookmark_id
+        WHERE ub.user_id = ${user.id}
+    `)
 
     res.status(200).json({
       data: bookmarks,
