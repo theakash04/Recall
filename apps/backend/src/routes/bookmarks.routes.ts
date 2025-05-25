@@ -3,7 +3,7 @@ import { addUrlSchema, getQuerySchema } from "../types/zod/bookmarks";
 import isUrlScrapable from "../utils/urlScrapableChecker";
 import * as schema from "@repo/database/schema";
 import { db } from "@repo/database/database";
-import { and, eq, ilike, sql } from "drizzle-orm";
+import { and, eq,  sql } from "drizzle-orm";
 import canonicalize from "../utils/urlCanonicalizer";
 import { addJob } from "../utils/jobScheduler";
 import { url_search } from "../services/searchServices";
@@ -95,6 +95,7 @@ router.post("/add-bookmark", async (req: Request, res: Response) => {
 
     if (!isJobRunning) {
       const jobData = {
+        url,
         globalBookmarkId: newGlobalBookmark.id,
       };
       const newJob = await addJob(jobData);
@@ -168,7 +169,6 @@ router.get("/get-all-bookmarks", async (req: Request, res: Response) => {
   const user = (req as any).user;
 
   try {
-
     const bookmarks = await db.execute(sql`
       SELECT 
         ub.id AS "userBookmarkId",
@@ -183,7 +183,7 @@ router.get("/get-all-bookmarks", async (req: Request, res: Response) => {
         LEFT JOIN global_jobs_bookmarks gjb 
         ON gb.id = gjb.global_bookmark_id
         WHERE ub.user_id = ${user.id}
-    `)
+    `);
 
     res.status(200).json({
       data: bookmarks,

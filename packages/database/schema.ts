@@ -1,4 +1,5 @@
 import { relations, SQL, sql, Table } from "drizzle-orm";
+import { boolean } from "drizzle-orm/pg-core";
 import { PgColumn } from "drizzle-orm/pg-core";
 import {
   customType,
@@ -18,7 +19,6 @@ export const jobStatusEnum = pgEnum("status", [
   "scraped",
   "embedded",
   "completed",
-  "failed",
 ]);
 
 const tsVector = customType<{ data: string }>({
@@ -59,6 +59,7 @@ export const globalJobsBookmarks = pgTable("global_jobs_bookmarks", {
     .references(() => globalBookmarks.id, { onDelete: "cascade" }),
   jobId: text("job_id").notNull(),
   status: jobStatusEnum().notNull().default("pending"),
+  isFailed: boolean().notNull().default(false),
   error: text("error"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()

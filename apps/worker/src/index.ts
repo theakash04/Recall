@@ -1,6 +1,6 @@
-import { Worker, Job } from 'bullmq';
-import { configDotenv } from 'dotenv';
-
+import { Worker, Job } from "bullmq";
+import { configDotenv } from "dotenv";
+import JobHandler from "./logic";
 configDotenv();
 
 const REDIS_URL = process.env.REDIS_STR;
@@ -10,11 +10,11 @@ if (!REDIS_URL) {
 }
 
 const worker = new Worker(
-  'bookmarks',
+  "bookmarks",
   async (job: Job) => {
     try {
       console.log(`Processing job ${job.id} with data:`, job.data);
-      return 'Job completed successfully';
+      await JobHandler(job);
     } catch (error) {
       console.error(`Job ${job.id} failed:`, error);
       throw error;
@@ -29,17 +29,15 @@ const worker = new Worker(
 );
 
 worker.on("ready", () => {
-  console.log("Worker is ready ")
-})
+  console.log("Worker is ready ");
+});
 
-
-worker.on('completed', (job: any) => {
+worker.on("completed", (job: any) => {
   console.log(`Job ${job.id} has been completed`);
   // add status as complete in db;
 });
 
-worker.on('failed', (job: any, err) => {
+worker.on("failed", (job: any, err) => {
   console.error(`Job ${job.id} has failed with error: ${err.message}`);
   // add status as failed on db;
 });
-
