@@ -30,6 +30,7 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@google/genai": "^1.0.1",
     "@repo/database": "workspace:*",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.49.4",
@@ -47,6 +48,7 @@
     "pino-http": "^10.4.0",
     "pino-pretty": "^13.0.0",
     "postgres": "^3.4.5",
+    "worker": "^0.4.0",
     "zod": "^3.24.4"
   }
 }

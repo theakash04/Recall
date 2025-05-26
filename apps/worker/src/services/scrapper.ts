@@ -1,13 +1,10 @@
 import { Readability } from "@mozilla/readability";
 import { db } from "@repo/database/database";
-import {
-  bookmarkContent,
-  globalBookmarks,
-  globalJobsBookmarks,
-} from "@repo/database/schema";
+import { bookmarkContent, globalBookmarks } from "@repo/database/schema";
 import axios from "axios";
 import { eq } from "drizzle-orm";
 import { JSDOM } from "jsdom";
+import updateJobStatus from "../utils/updateJobStatus";
 
 type scrapperParams = {
   url: string;
@@ -28,17 +25,6 @@ async function Scrapper(params: scrapperParams) {
     if (!title || !textContent) {
       throw new Error("No title or text content found!");
     }
-    // Updating title
-    const titleSaved = await db
-      .update(globalBookmarks)
-      .set({
-        title: title,
-      })
-      .where(eq(globalBookmarks.id, params.globalBookmarkId));
-
-    if (!titleSaved) {
-      throw new Error("Failed to add tittle to globalBookmarks");
-    }
 
     // saving bookmarks
     const bookmarkContentSaved = await db
@@ -52,23 +38,35 @@ async function Scrapper(params: scrapperParams) {
       throw new Error("Bookmark Content not saved properly!");
     }
 
+    // Updating title and connecting global bookmark to bookmarkContent
+    await db
+      .update(globalBookmarks)
+      .set({
+        title: title,
+        bookmarkContentId: bookmarkContentSaved[0]?.insertedId,
+      })
+      .where(eq(globalBookmarks.id, params.globalBookmarkId));
+
     // updating the job status in db
-    await db.update(globalJobsBookmarks).set({
+    await updateJobStatus({
+      globalBookmarkId: params.globalBookmarkId,
       status: "scraped",
       error: "",
       isFailed: false,
     });
+    return {
+      bookmarkContentId: bookmarkContentSaved[0].insertedId,
+      textContent,
+    };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
 
-    await db
-      .update(globalJobsBookmarks)
-      .set({
-        status: "pending",
-        isFailed: true,
-        error: errorMessage,
-      })
-      .where(eq(globalJobsBookmarks.globalBookmarkId, params.globalBookmarkId));
+    await updateJobStatus({
+      globalBookmarkId: params.globalBookmarkId,
+      isFailed: true,
+      error: errorMessage,
+    });
+    throw err;
   }
 }
 

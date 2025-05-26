@@ -1,8 +1,9 @@
 {
-  "name": "workers",
+  "name": "worker",
   "version": "1.0.0",
   "description": "",
-  "main": "index.ts",
+  "main": "src/index.ts",
+  "private": true,
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
@@ -10,7 +11,10 @@
     "lint": "echo \"Error: no lint specified\" && exit 1",
     "check-types": "tsc --noEmit"
   },
-  "keywords": [],
+  "keywords": [
+    "recall",
+    "worker"
+  ],
   "author": "theakash04",
   "license": "ISC",
   "type": "commonjs",
@@ -22,6 +26,9 @@
     "typescript": "^5.8.3"
   },
   "dependencies": {
+    "@langchain/core": "^0.3.57",
+    "@repo/utils": "workspace:*",
+    "@langchain/textsplitters": "^0.1.0",
     "@mozilla/readability": "^0.6.0",
     "@repo/database": "workspace:*",
     "axios": "^1.9.0",

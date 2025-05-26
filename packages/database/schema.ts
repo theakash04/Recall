@@ -17,6 +17,7 @@ import { authUsers } from "drizzle-orm/supabase";
 export const jobStatusEnum = pgEnum("status", [
   "pending",
   "scraped",
+  "splitted",
   "embedded",
   "completed",
 ]);
@@ -115,7 +116,7 @@ export const vectorEmbedding = pgTable(
     splitContentId: uuid("split_content_id")
       .notNull()
       .references(() => splitContent.id, { onDelete: "cascade" }),
-    embedding: vector("embedding", { dimensions: 1536 }),
+    embedding: vector("embedding", { dimensions: 768 }),
   },
   (table) => [
     index("l2_index").using("ivfflat", table.embedding.op("vector_l2_ops")),
