@@ -33,6 +33,12 @@ async function saveToDB(params: {
   }
 }
 
+type EmbeddingResult = {
+  splitContentId: string;
+  text: string;
+  embedding: number[];
+};
+
 async function embedContent(params: JobBookmarks) {
   const done: boolean = await isStepAlreadyDone({
     jobId: params.jobId,
@@ -78,13 +84,13 @@ async function embedContent(params: JobBookmarks) {
   if (toEmbed.length === 0) {
     console.log("All content already embedded. skipping embedding step!");
   } else {
-    const Content = await geminiEmbedding({
+    const Content = (await geminiEmbedding({
       API_KEY: GEMINI_API,
       content: toEmbed.map((data) => ({
         splitContentId: data.id,
         text: data.contentChunk,
       })),
-    });
+    })) as EmbeddingResult[];
 
     if (!Content) {
       throw new Error("Content not embedded!");

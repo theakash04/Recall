@@ -1,126 +1,16 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
 import { AnimatePresence, motion } from "framer-motion";
-
-type Bookmark = {
-  id: number;
-  title: string;
-  url: string;
-  createdAt?: Date;
-  status: "pending" | "completed" | "failed";
-};
-
-const dummyBookmarks: Bookmark[] = [
-  {
-    id: 1,
-    title: "Google",
-    url: "https://www.google.com",
-    createdAt: new Date(),
-    status: "failed",
-  },
-  {
-    id: 2,
-    title: "Facebook",
-    url: "https://www.facebook.com",
-    createdAt: new Date(),
-    status: "pending",
-  },
-  {
-    id: 3,
-    title: "Twitter",
-    url: "https://www.twitter.com",
-    createdAt: new Date(),
-    status: "pending",
-  },
-  {
-    id: 4,
-    title: "LinkedIn",
-    url: "https://www.linkedin.com",
-    createdAt: new Date(),
-    status: "failed",
-  },
-  {
-    id: 5,
-    title: "GitHub",
-    url: "https://www.github.com",
-    createdAt: new Date(),
-    status: "pending",
-  },
-  {
-    id: 6,
-    title: "Stack Overflow",
-    url: "https://stackoverflow.com",
-    createdAt: new Date(),
-    status: "pending",
-  },
-  {
-    id: 7,
-    title: "Reddit",
-    url: "https://www.reddit.com",
-    createdAt: new Date(),
-    status: "pending",
-  },
-  {
-    id: 8,
-    title: "YouTube",
-    url: "https://www.youtube.com",
-    createdAt: new Date(),
-    status: "completed",
-  },
-  {
-    id: 9,
-    title: "Instagram",
-    url: "https://www.instagram.com",
-    createdAt: new Date(),
-    status: "completed",
-  },
-  {
-    id: 10,
-    title: "Pinterest",
-    url: "https://www.pinterest.com",
-    createdAt: new Date(),
-    status: "completed",
-  },
-  {
-    id: 11,
-    title: "Tumblr",
-    url: "https://www.tumblr.com",
-    createdAt: new Date(),
-    status: "pending",
-  },
-  {
-    id: 12,
-    title: "Flickr",
-    url: "https://www.flickr.com",
-    createdAt: new Date(),
-    status: "completed",
-  },
-  {
-    id: 13,
-    title: "Quora",
-    url: "https://www.quora.com",
-    createdAt: new Date(),
-    status: "pending",
-  },
-  {
-    id: 14,
-    title: "WhatsApp",
-    url: "https://www.whatsapp.com",
-    createdAt: new Date(),
-    status: "completed",
-  },
-  {
-    id: 15,
-    title: "Snapchat",
-    url: "https://www.snapchat.com",
-    createdAt: new Date(),
-    status: "failed",
-  },
-];
+import axios from "axios";
+import { toast } from "sonner";
+import useBookmarkStore from "@/store/bookmarkStore";
+import { bookmark } from "@/types/bookmarkTypes";
+import clsx from "clsx";
+import { CircleAlert } from "lucide-react";
 
 const URL_REGEX = /^(https:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/i;
 
@@ -131,20 +21,18 @@ const normalizeUrl = (url: string): string => {
       : `https://${url.toLowerCase()}`;
 
     const parsed = new URL(urlWithProtocol);
-    return (
-      parsed.hostname.replace(/^www\./, "") + parsed.pathname.replace(/\/$/, "")
-    );
+    return parsed.origin + parsed.pathname.replace(/\/$/, "");
   } catch {
     return url.toLowerCase();
   }
 };
 
-const BookmarkCard = ({ bookmark }: { bookmark: Bookmark }) => (
+const BookmarkCard = ({ bookmark }: { bookmark: bookmark }) => (
   <motion.a
     href={bookmark.url}
     target="_blank"
     rel="noopener noreferrer"
-    className="bg-muted/50 rounded-xl p-4 hover:bg-muted transition-colors relative" // Added relative
+    className="bg-muted/50 rounded-xl p-4 hover:bg-muted transition-colors relative"
     whileHover={{ scale: 1.03 }}
     whileTap={{ scale: 0.95 }}
     initial={{ opacity: 0, y: 10 }}
@@ -153,23 +41,41 @@ const BookmarkCard = ({ bookmark }: { bookmark: Bookmark }) => (
   >
     {/* Status Badge */}
     <div className="absolute top-2 right-2 z-10">
-      <span
-        className={`text-xs font-medium px-2 py-1 rounded-full ${
-          bookmark.status === "completed"
-            ? "bg-green-500/20 text-green-600"
-            : bookmark.status === "pending"
-              ? "bg-yellow-500/20 text-yellow-600"
-              : "bg-red-500/20 text-red-600"
-        }`}
-      >
-        {bookmark.status}
-      </span>
+      <div className="flex items-center gap-2 justify-center">
+        <span
+          className={clsx("text-xs font-medium px-2 py-1 rounded-full", {
+            "bg-green-500/20 text-green-600":
+              bookmark.jobStatus === "completed",
+            "bg-yellow-500/20 text-yellow-400": [
+              "pending",
+              "scraped",
+              "embedded",
+              "splitted",
+            ].includes(bookmark.jobStatus),
+            "bg-red-500/20 text-red-600": ![
+              "completed",
+              "pending",
+              "scraped",
+              "embedded",
+              "splitted",
+            ].includes(bookmark.jobStatus),
+          })}
+        >
+          {bookmark.jobStatus}
+        </span>
+        {bookmark.isFailed && (
+          // do something on click like showing the error message
+          <span className="text-xs text-red-600 font-medium">
+            <CircleAlert />
+          </span>
+        )}
+      </div>
     </div>
 
     {/* Date */}
     <div className="absolute bottom-2 right-2">
       <p className="text-[10px] text-muted-foreground">
-        {bookmark.createdAt?.toLocaleDateString("en-US", {
+        {new Date(bookmark.createdAt)?.toLocaleDateString("en-US", {
           year: "numeric",
           month: "short",
           day: "numeric",
@@ -180,67 +86,107 @@ const BookmarkCard = ({ bookmark }: { bookmark: Bookmark }) => (
     {/* Main Content */}
     <div className="flex flex-col gap-1">
       <p className="break-words font-medium pr-8">{bookmark.title}</p>
-      <p className="text-xs text-muted-foreground truncate">
-        {new URL(bookmark.url).hostname}
+      <p className="text-xs text-muted-foreground break-words">
+        {bookmark.url}
       </p>
     </div>
   </motion.a>
 );
 
 export default function Bookmarks() {
+  const { isLoading, AddBookmark, bookmarks } = useBookmarkStore();
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredBookmarks, setFilteredBookmarks] =
-    useState<Bookmark[]>(dummyBookmarks);
+    useState<bookmark[]>(bookmarks);
   const [isUrlNotFound, setIsUrlNotFound] = useState<string | null>(null);
 
   const isURL = useCallback((str: string) => URL_REGEX.test(str), []);
 
-  const handleSearch = useCallback(() => {
+  const handleSearch = useCallback(async () => {
     const query = searchQuery.trim();
     if (!query) {
-      console.log("No query");
-      setFilteredBookmarks(dummyBookmarks);
+      setFilteredBookmarks(bookmarks);
       setIsUrlNotFound(null);
       return;
     }
-    console.log(isURL(query));
 
     if (isURL(query)) {
       const normalizedQuery = normalizeUrl(query);
-      console.log("Normalized URL:", normalizedQuery);
-      const matches = dummyBookmarks.filter(
-        (bookmark) => normalizeUrl(bookmark.url) === normalizedQuery
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_SERVER_API}/search`,
+        {
+          params: {
+            url: normalizedQuery,
+            search_type: "url",
+          },
+          withCredentials: true,
+        }
       );
 
-      if (matches.length > 0) {
-        setFilteredBookmarks(matches);
+      const data = response.data.data;
+      if (data.length > 0) {
+        setFilteredBookmarks(data);
         setIsUrlNotFound(null);
       } else {
         setFilteredBookmarks([]);
         setIsUrlNotFound(normalizedQuery);
       }
     } else {
-      const lowerQuery = query.toLowerCase();
-      const filtered = dummyBookmarks.filter(
-        (bookmark) =>
-          bookmark.title.toLowerCase().includes(lowerQuery) ||
-          bookmark.url.toLowerCase().includes(lowerQuery)
+      const response = await axios.get(
+        `${process.env.NEXT_PUBLIC_SERVER_API}/search`,
+        {
+          params: {
+            query: query.toLowerCase(),
+            search_type: "hybrid",
+          },
+          withCredentials: true,
+        }
       );
-      setFilteredBookmarks(filtered);
+      const data = response.data.data;
+      setFilteredBookmarks(data);
       setIsUrlNotFound(null);
     }
   }, [searchQuery, isURL]);
 
+  useEffect(() => {
+    setFilteredBookmarks(bookmarks);
+  }, [bookmarks]);
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") handleSearch();
   };
+
+  async function handleAddUrl() {
+    const url = searchQuery.trim();
+    if (!url) return;
+
+    if (!isURL(url)) {
+      toast.warning("Please enter a valid URL.");
+      return;
+    }
+
+    const normalizedUrl = normalizeUrl(url);
+    try {
+      await AddBookmark({
+        url: normalizedUrl,
+      });
+      toast.success("Bookmark added successfully!");
+      setSearchQuery("");
+      handleSearch();
+    } catch (error) {
+      console.error("Failed to add bookmark:", error);
+      toast.error("Failed to add bookmark. Please try again.");
+    }
+  }
 
   return (
     <div className="w-full flex flex-col gap-6 h-max py-6">
       <div className="flex items-center gap-6 flex-col md:flex-row">
         <div className="flex-1 w-full">
           <Input
+            id="bookmark-search-add"
             type="search"
+            aria-label="Search bookmarks"
             placeholder="Search bookmarks..."
             className="py-6 w-full text-base"
             value={searchQuery}
@@ -250,18 +196,36 @@ export default function Bookmarks() {
             autoFocus
           />
         </div>
-        <Button onClick={handleSearch} className="py-6 px-10 cursor-pointer">
+        <Button
+          onClick={handleSearch}
+          type="button"
+          className="py-6 px-10 cursor-pointer"
+          aria-label="search bookmarks button"
+        >
           Search
         </Button>
       </div>
 
-      <Separator className="my-4" />
+      <Separator className="my-4" aria-hidden="true" />
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 overflow-y-hidden overflow-x-hidden md:px-6 px-0">
         <AnimatePresence mode="popLayout">
-          {filteredBookmarks.length > 0 ? (
-            filteredBookmarks.map((bookmark) => (
-              <BookmarkCard key={bookmark.id} bookmark={bookmark} />
+          {isLoading && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center text-muted-foreground col-span-full"
+            >
+              Loading...
+            </motion.div>
+          )}
+          {filteredBookmarks.length > 0 && !isLoading ? (
+            filteredBookmarks.flatMap((bookmark, idx) => (
+              <BookmarkCard
+                key={bookmark.bookmarkId ?? idx}
+                bookmark={bookmark}
+              />
             ))
           ) : isUrlNotFound ? (
             <motion.div
@@ -272,10 +236,7 @@ export default function Bookmarks() {
               <p>
                 No bookmark found for: <strong>{isUrlNotFound}</strong>
               </p>
-              <Button
-                variant="secondary"
-                onClick={() => alert(`Add URL: ${isUrlNotFound}`)}
-              >
+              <Button variant="secondary" onClick={handleAddUrl}>
                 Add this URL
               </Button>
             </motion.div>

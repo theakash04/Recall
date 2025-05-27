@@ -63,7 +63,10 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   // Attatch user to request for downstream handler
-  (req as any).user = userData.user?.user_metadata;
+  (req as any).user = {
+    id: userData.user.id,
+    ...userData.user?.user_metadata,
+  };
   next();
 };
 

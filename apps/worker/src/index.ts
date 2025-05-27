@@ -1,8 +1,9 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import { Worker, Job } from "bullmq";
-import { configDotenv } from "dotenv";
 import JobHandler from "./logic";
 import updateJobStatus from "./utils/updateJobStatus";
-configDotenv();
 
 const REDIS_URL = process.env.REDIS_STR;
 if (!REDIS_URL) {

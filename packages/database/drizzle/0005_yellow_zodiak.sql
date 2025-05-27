@@ -1,0 +1,1 @@
+ALTER TABLE "global_jobs_bookmarks" ALTER COLUMN "is_failed" DROP NOT NULL;

@@ -1,5 +1,8 @@
 "use client";
 import Bookmarks from "@/components/Bookmarks";
+import useBookmarkStore from "@/store/bookmarkStore";
+import { useEffect } from "react";
+import { toast } from "sonner";
 // import { BookmarkFormData, inputBookmarkSchema } from "@/zod/bookmarkSchema";
 // import { zodResolver } from "@hookform/resolvers/zod";
 // import axios from "axios";
@@ -37,6 +40,20 @@ export default function Page() {
   //     });
   //   }
   // };
+  const { getAllBookmarks } = useBookmarkStore();
+
+  useEffect(() => {
+    const fetchBookmarks = async () => {
+      try {
+        await getAllBookmarks();
+      } catch (error) {
+        console.error("Failed to fetch bookmarks:", error);
+        toast.error("Failed to fetch bookmarks. Please try again later.");
+      }
+    };
+
+    fetchBookmarks();
+  }, []);
 
   return (
     <div className="flex flex-1 flex-col gap-4 pt-0 px-4 my-4">

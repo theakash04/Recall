@@ -9,16 +9,6 @@ export const getQuerySchema = z
         .regex(/^https:\/\/([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(\/.*)?$/),
       z.string(),
     ]),
-    match_count: z
-      .number()
-      .min(1, { message: "Minimum match count should be 1" })
-      .max(20, { message: "Maximum match count should be 20" })
-      .optional(),
-    match_threshold: z
-      .number()
-      .min(0, { message: "Minimum match threshold should be 0" })
-      .max(1, { message: "Maximum match threshold should be 1" })
-      .optional(),
     search_type: z
       .enum(["keyword", "semantic", "hybrid", "url"])
       .default("keyword"),

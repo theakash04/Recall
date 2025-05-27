@@ -60,7 +60,7 @@ export const globalJobsBookmarks = pgTable("global_jobs_bookmarks", {
     .references(() => globalBookmarks.id, { onDelete: "cascade" }),
   jobId: text("job_id").notNull(),
   status: jobStatusEnum().notNull().default("pending"),
-  isFailed: boolean().notNull().default(false),
+  isFailed: boolean("is_failed").default(false),
   error: text("error"),
   updatedAt: timestamp("updated_at", { withTimezone: true })
     .defaultNow()

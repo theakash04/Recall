@@ -1,9 +1,9 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import { pinoHttp } from "pino-http";
+// import { pinoHttp } from "pino-http";
 import cookieParser from "cookie-parser";
-import logger from "./utils/logger";
+// import logger from "./utils/logger";
 
 dotenv.config();
 
@@ -11,11 +11,11 @@ const app = express();
 const PORT = process.env.PORT || 8000;
 const origins = ["http://localhost:3000"];
 
-app.use(
-  pinoHttp({
-    logger: logger,
-  })
-);
+// app.use(
+//   pinoHttp({
+//     logger: logger,
+//   })
+// );
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());

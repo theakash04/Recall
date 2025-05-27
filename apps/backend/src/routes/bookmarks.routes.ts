@@ -3,12 +3,25 @@ import { addUrlSchema, getQuerySchema } from "../types/zod/bookmarks";
 import isUrlScrapable from "../utils/urlScrapableChecker";
 import * as schema from "@repo/database/schema";
 import { db } from "@repo/database/database";
-import { and, eq,  sql } from "drizzle-orm";
+import { and, desc, eq, sql } from "drizzle-orm";
 import canonicalize from "../utils/urlCanonicalizer";
 import { addJob } from "../utils/jobScheduler";
-import { url_search } from "../services/searchServices";
+import {
+  hybrid_search,
+  keyword_search,
+  semantic_search,
+  url_search,
+} from "../services/searchServices";
+import { searchResult, urlSearchReturn } from "../types/searchTypes";
+import geminiEmbedding from "@repo/utils/genEmbeddings";
+import dotenv from "dotenv";
+dotenv.config();
 
 const router: Router = Router();
+const GEMINI_API = process.env.GEMINI_API;
+if (!GEMINI_API) {
+  throw new Error("No api provided!");
+}
 
 router.post("/add-bookmark", async (req: Request, res: Response) => {
   const user = (req as any).user;
@@ -126,9 +139,8 @@ router.get("/search", async (req: Request, res: Response) => {
 
   // pass to zod for validation
   const queryParams = getQuerySchema.safeParse({
-    query: req.query.string || req.query.url,
-    match_count: req.query.match_count,
-    match_threshold: req.query.match_threshold,
+    query: req.query.query || req.query.url,
+    search_type: req.query.search_type,
   });
 
   if (!queryParams.success) {
@@ -137,28 +149,71 @@ router.get("/search", async (req: Request, res: Response) => {
     });
     return;
   }
-  const { query, match_count, match_threshold } = queryParams.data;
+  const { query, search_type } = queryParams.data;
+
+  const validTypes = ["url", "keyword", "semantic", "hybrid"];
+  if (!validTypes.includes(search_type)) {
+    res.status(400).json({
+      message: "Invalid search_type provided",
+    });
+    return;
+  }
+
+  console.log(queryParams);
 
   // implement logic of search with url
   try {
-    const isURL = new URL(query as string);
+    let results: urlSearchReturn[] | searchResult[] = [];
+    let embedding: number[] = [];
 
-    if (isURL) {
-      // create a sep function for this
-      const results = await url_search({
-        query: query as string,
-        userId: user.id,
-      });
-
-      res.status(200).json({
-        data: results,
-        message: "Searched data fetched!",
-        size: results.length,
-      });
+    if (search_type !== "url") {
+      embedding = (await geminiEmbedding({
+        API_KEY: GEMINI_API,
+        query,
+      })) as number[];
     }
 
-    // with keyword and semantic (hybrid)
+    switch (search_type) {
+      case "url":
+        results = await url_search({
+          query: query as string,
+          userId: user.id,
+        });
+        break;
+      case "keyword":
+        console.log("keyword_search");
+        // keyword search
+        results = await keyword_search({
+          query,
+          userId: user.id,
+        });
+        break;
+      case "semantic":
+        console.log("semantic");
+        // semantic search
+        results = await semantic_search({
+          queryEmbedding: embedding,
+          userId: user.id,
+        });
+        break;
+      case "hybrid":
+        console.log("hybrid");
+        // hybrid search
+        results = await hybrid_search({
+          query,
+          queryEmbedding: embedding,
+          userId: user.id,
+        });
+        break;
+    }
+
+    res.status(200).json({
+      data: results,
+      message: "Searched data fetched!",
+      size: results.length,
+    });
   } catch (err) {
+    console.log(err);
     res.status(500).json({
       message: "Something Unexpected happend!",
     });
@@ -167,23 +222,60 @@ router.get("/search", async (req: Request, res: Response) => {
 
 router.get("/get-all-bookmarks", async (req: Request, res: Response) => {
   const user = (req as any).user;
+  if (!user?.id) {
+    throw new Error("user Id is undefined");
+  }
 
   try {
-    const bookmarks = await db.execute(sql`
-      SELECT 
-        ub.id AS "userBookmarkId",
-        ub.url,
-        gb.id AS "globalBookmarksId",
-        gjb.status AS "jobStatus",
-        gjb.error AS "jobError",
-        ub.created_at AS "createdAt"
-        FROM users_bookmarks ub
-        LEFT JOIN global_bookmarks gb 
-        ON ub.global_bookmark_id = gb.id
-        LEFT JOIN global_jobs_bookmarks gjb 
-        ON gb.id = gjb.global_bookmark_id
-        WHERE ub.user_id = ${user.id}
-    `);
+    const bookmarks = await db
+      .select({
+        bookmarkId: schema.usersBookmarks.id,
+        url: schema.usersBookmarks.url,
+        title: sql`gb.title`,
+        isFailed: sql`gjb.is_failed`,
+        jobStatus: sql`gjb.status`,
+        error: sql`gjb.error`,
+        createdAt: schema.usersBookmarks.createdAt,
+      })
+      .from(schema.usersBookmarks)
+      .leftJoinLateral(
+        db
+          .select({
+            title: schema.globalBookmarks.title,
+          })
+          .from(schema.globalBookmarks)
+          .where(
+            eq(
+              schema.globalBookmarks.id,
+              schema.usersBookmarks.globalBookmarkId
+            )
+          )
+          .limit(1)
+          .as("gb"),
+        sql`TRUE`
+      )
+      .leftJoinLateral(
+        db
+          .select({
+            status: schema.globalJobsBookmarks.status,
+            isFailed: schema.globalJobsBookmarks.isFailed,
+            error: schema.globalJobsBookmarks.error,
+          })
+          .from(schema.globalJobsBookmarks)
+          .where(
+            eq(
+              schema.globalJobsBookmarks.globalBookmarkId,
+              schema.usersBookmarks.globalBookmarkId
+            )
+          )
+          .orderBy(desc(schema.globalJobsBookmarks.updatedAt))
+          .limit(1)
+          .as("gjb"),
+        sql`TRUE`
+      )
+      .where(eq(schema.usersBookmarks.userId, user.id));
+
+    console.log(bookmarks);
 
     res.status(200).json({
       data: bookmarks,

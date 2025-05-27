@@ -20,12 +20,12 @@ importers:
 
   apps/backend:
     dependencies:
-      '@google/genai':
-        specifier: ^1.0.1
-        version: 1.0.1(@modelcontextprotocol/sdk@1.12.0)
       '@repo/database':
         specifier: workspace:*
         version: link:../../packages/database
+      '@repo/utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       '@supabase/ssr':
         specifier: ^0.6.1
         version: 0.6.1(@supabase/supabase-js@2.49.8)
