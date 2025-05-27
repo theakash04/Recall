@@ -1,18 +1,15 @@
 import { RecursiveCharacterTextSplitter } from "@langchain/textsplitters";
-import { SplitInsertResult } from "../types/returnTypes";
-import crypto from "crypto";
 import { db } from "@repo/database/database";
-import { splitContent } from "@repo/database/schema";
-
-type splitterParams = {
-  bookmarkContentId: string;
-  textContent: string;
-};
-
-// ✅ Helper: Hash function
-async function hashTextContent(content: string) {
-  return crypto.createHash("sha256").update(content).digest("hex");
-}
+import {
+  bookmarkContent,
+  globalBookmarks,
+  splitContent,
+} from "@repo/database/schema";
+import { JobBookmarks } from "@repo/database/types";
+import { eq } from "drizzle-orm";
+import isStepAlreadyDone from "../utils/checkJobStatus";
+import updateJobStatus from "../utils/updateJobStatus";
+import { hashTextContent } from "../utils/hashHelper";
 
 // ✅ Insert a split chunk to DB and return its ID
 async function insertToDB({
@@ -24,6 +21,18 @@ async function insertToDB({
 }): Promise<string> {
   try {
     const contentHash = await hashTextContent(content);
+
+    // checking if chunk already exists
+    const existing = await db
+      .select({ id: splitContent.id })
+      .from(splitContent)
+      .where(eq(splitContent.contentChunkHash, contentHash))
+      .limit(1)
+      .then((rows) => rows[0]);
+
+    if (existing) {
+      return existing.id;
+    }
 
     const [inserted] = await db
       .insert(splitContent)
@@ -44,22 +53,55 @@ async function insertToDB({
 }
 
 // ✅ Main function: Split and insert
-async function splitter(params: splitterParams): Promise<SplitInsertResult[]> {
-  try {
-    const textSplitter = new RecursiveCharacterTextSplitter({
-      chunkSize: 1500,
-      chunkOverlap: 200,
+async function splitter(params: JobBookmarks) {
+  const done = await isStepAlreadyDone({
+    jobId: params.jobId,
+    expectedStatus: "scraped",
+  });
+
+  if (done) {
+    console.log("Splitter: Step already done, skipping!");
+    return;
+  }
+
+  const contentData = await db
+    .select()
+    .from(globalBookmarks)
+    .where(eq(globalBookmarks.id, params.globalBookmarkId))
+    .limit(1)
+    .then(async (rows) => {
+      const globalBookmark = rows[0];
+      if (!globalBookmark?.bookmarkContentId) {
+        throw new Error("Missing bookmarkContentId in globalBookmark");
+      }
+      return await db
+        .select()
+        .from(bookmarkContent)
+        .where(eq(bookmarkContent.id, globalBookmark?.bookmarkContentId))
+        .limit(1)
+        .then((rows) => rows[0]);
     });
 
-    const splittedText = await textSplitter.createDocuments([
-      params.textContent,
-    ]);
+  if (!contentData) {
+    throw new Error("No content found in the DB connected to globalBookmark");
+  }
 
-    const result: SplitInsertResult[] = await Promise.all(
-      splittedText.map(async (doc): Promise<SplitInsertResult> => {
+  const textSplitter = new RecursiveCharacterTextSplitter({
+    chunkSize: 1500,
+    chunkOverlap: 200,
+  });
+
+  const splittedText = await textSplitter.createDocuments([
+    contentData?.content,
+  ]);
+
+  const result = await Promise.all(
+    splittedText
+      .filter((doc) => !!doc.pageContent)
+      .map(async (doc) => {
         const splitContentId = await insertToDB({
           content: doc.pageContent,
-          bookmarkContentId: params.bookmarkContentId,
+          bookmarkContentId: contentData.id,
         });
 
         return {
@@ -67,11 +109,17 @@ async function splitter(params: splitterParams): Promise<SplitInsertResult[]> {
           text: doc.pageContent,
         };
       })
-    );
+  );
 
-    return result;
-  } catch (err) {
-    throw err;
+  await updateJobStatus({
+    globalBookmarkId: params.globalBookmarkId,
+    error: "",
+    isFailed: false,
+    status: "splitted",
+  });
+
+  if (!result) {
+    throw new Error("Failed to save splitted content into the db!");
   }
 }
 

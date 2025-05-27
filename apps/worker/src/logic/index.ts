@@ -4,29 +4,44 @@ import { db } from "@repo/database/database";
 import { globalJobsBookmarks } from "@repo/database/schema";
 import { eq } from "drizzle-orm";
 import splitter from "../services/splitter";
-import { SplitInsertResult } from "../types/returnTypes";
+import embedContent from "../services/embedContent";
+import updateJobStatus from "../utils/updateJobStatus";
 
-async function JobHandler(params: Job) {
-  try {
-    const { url, globalBookmarkId } = params.data;
-    const JobBookmarkData = await db.query.globalJobsBookmarks.findFirst({
-      where: eq(globalJobsBookmarks.globalBookmarkId, globalBookmarkId),
-    });
-    if (JobBookmarkData && JobBookmarkData?.status !== "scraped") {
-      // scrape
-      const { bookmarkContentId, textContent } = await Scrapper(url);
-      // split
-      const splitTexts: SplitInsertResult[] = await splitter({
-        bookmarkContentId,
-        textContent,
+async function JobHandler(job: Job) {
+  const jobId = job.id;
+  const url = job.data.url;
+
+  const dbJob = await db
+    .select()
+    .from(globalJobsBookmarks)
+    .where(eq(globalJobsBookmarks.jobId, jobId!))
+    .limit(1)
+    .then((rows) => rows[0]);
+
+  if (!dbJob) {
+    throw new Error(`No job found for ID: ${jobId}`);
+  }
+
+  switch (dbJob.status) {
+    case "pending":
+      await Scrapper({ ...dbJob, url });
+    case "scraped":
+      await splitter(dbJob);
+    case "splitted":
+      await embedContent(dbJob);
+    case "embedded":
+      await updateJobStatus({
+        globalBookmarkId: dbJob.globalBookmarkId,
+        error: "",
+        isFailed: false,
+        status: "completed",
       });
-
-      // embed
-      
-
-    }
-  } catch (err) {
-    throw err;
+    case "completed":
+      console.log("Job already completed skipping!");
+      break;
+    default:
+      console.log("This case is not handled in switch statement.");
+      break;
   }
 }
 

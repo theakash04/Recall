@@ -1,6 +1,7 @@
 import { Worker, Job } from "bullmq";
 import { configDotenv } from "dotenv";
 import JobHandler from "./logic";
+import updateJobStatus from "./utils/updateJobStatus";
 configDotenv();
 
 const REDIS_URL = process.env.REDIS_STR;
@@ -32,12 +33,11 @@ worker.on("ready", () => {
   console.log("Worker is ready ");
 });
 
-worker.on("completed", (job: any) => {
-  console.log(`Job ${job.id} has been completed`);
-  // add status as complete in db;
-});
-
-worker.on("failed", (job: any, err) => {
-  console.error(`Job ${job.id} has failed with error: ${err.message}`);
-  // add status as failed on db;
+worker.on("failed", async (job: Job | undefined, err) => {
+  console.error(`Job ${job?.id} has failed with error: ${err.message}`);
+  await updateJobStatus({
+    globalBookmarkId: job?.data.globalBookmarkId,
+    error: err.message,
+    isFailed: true,
+  });
 });

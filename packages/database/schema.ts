@@ -81,6 +81,7 @@ export const globalBookmarks = pgTable("global_bookmarks", {
 export const bookmarkContent = pgTable("bookmark_content", {
   id: uuid("id").defaultRandom().primaryKey(),
   content: text("content").notNull(),
+  contentHash: varchar("content_hash", { length: 64 }).notNull().unique(),
 });
 
 export const splitContent = pgTable(

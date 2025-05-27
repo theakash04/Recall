@@ -5,13 +5,25 @@ import axios from "axios";
 import { eq } from "drizzle-orm";
 import { JSDOM } from "jsdom";
 import updateJobStatus from "../utils/updateJobStatus";
+import { JobBookmarks } from "@repo/database/types";
+import isStepAlreadyDone from "../utils/checkJobStatus";
+import { hashTextContent } from "../utils/hashHelper";
 
-type scrapperParams = {
+type scrapperParams = JobBookmarks & {
   url: string;
-  globalBookmarkId: string;
 };
 
 async function Scrapper(params: scrapperParams) {
+  const done = await isStepAlreadyDone({
+    jobId: params.jobId,
+    expectedStatus: "pending",
+  });
+
+  if (done) {
+    console.log("Scrapper: step already done, skipping");
+    return;
+  }
+
   try {
     const html = await axios.get(params.url).then((res) => res.data);
     const doc = new JSDOM(html, { url: params.url });
@@ -26,16 +38,33 @@ async function Scrapper(params: scrapperParams) {
       throw new Error("No title or text content found!");
     }
 
-    // saving bookmarks
-    const bookmarkContentSaved = await db
-      .insert(bookmarkContent)
-      .values({
-        content: textContent,
-      })
-      .returning({ insertedId: bookmarkContent.id });
+    const contentHash = await hashTextContent(textContent);
 
-    if (!bookmarkContentSaved[0]?.insertedId) {
-      throw new Error("Bookmark Content not saved properly!");
+    const existingContent = await db
+      .select({ id: bookmarkContent.id })
+      .from(bookmarkContent)
+      .where(eq(bookmarkContent.contentHash, contentHash))
+      .limit(1)
+      .then((rows) => rows[0]);
+
+    let contentId: string;
+
+    if (existingContent) {
+      contentId = existingContent.id;
+    } else {
+      const inserted = await db
+        .insert(bookmarkContent)
+        .values({
+          content: textContent,
+          contentHash,
+        })
+        .returning({ insertedId: bookmarkContent.id });
+
+      if (!inserted[0]?.insertedId) {
+        throw new Error("Bookmark Content not saved properly!");
+      }
+
+      contentId = inserted[0].insertedId;
     }
 
     // Updating title and connecting global bookmark to bookmarkContent
@@ -43,7 +72,7 @@ async function Scrapper(params: scrapperParams) {
       .update(globalBookmarks)
       .set({
         title: title,
-        bookmarkContentId: bookmarkContentSaved[0]?.insertedId,
+        bookmarkContentId: contentId,
       })
       .where(eq(globalBookmarks.id, params.globalBookmarkId));
 
@@ -54,10 +83,6 @@ async function Scrapper(params: scrapperParams) {
       error: "",
       isFailed: false,
     });
-    return {
-      bookmarkContentId: bookmarkContentSaved[0].insertedId,
-      textContent,
-    };
   } catch (err) {
     const errorMessage = err instanceof Error ? err.message : "Unknown error";
 

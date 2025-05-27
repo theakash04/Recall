@@ -10,7 +10,7 @@
   },
   "exports": {
     "./genEmbeddings": {
-      "types": "./src/genEmbeddings.ts",
+      "types": "./dist/genEmbeddings.d.ts",
       "default": "./dist/genEmbeddings.js"
     }
   },

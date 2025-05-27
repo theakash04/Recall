@@ -1,27 +1,32 @@
 import { GoogleGenAI } from "@google/genai";
 
 async function geminiEmbedding(params: {
-  content: string[] | string;
+  content: {
+    splitContentId: string;
+    text: string;
+  }[];
   API_KEY: string;
 }) {
   const ai = new GoogleGenAI({
     apiKey: params.API_KEY,
   });
 
+  const content = params.content.map((data) => data.text);
+
   const response = await ai.models.embedContent({
     model: "models/text-embedding-004",
-    contents: params.content,
+    contents: content,
     config: {
       taskType: "SEMANTIC_SIMILARITY",
     },
   });
   const result = response.embeddings?.map((embed, idx) => ({
-    text: params.content[idx],
+    splitContentId: params.content[idx]?.splitContentId,
+    text: params.content[idx]?.text,
     embedding: embed.values,
   }));
 
   return result;
 }
 
-
-export default geminiEmbedding
+export default geminiEmbedding;
