@@ -11,14 +11,12 @@ async function JobHandler(job: Job) {
   const jobId = job.id;
   const url = job.data.url;
 
-  console.log("came here")
   const dbJob = await db
     .select()
     .from(globalJobsBookmarks)
     .where(eq(globalJobsBookmarks.jobId, jobId!))
     .limit(1)
     .then((rows) => rows[0]);
-  console.log(dbJob)
 
   if (!dbJob) {
     throw new Error(`No job found for ID: ${jobId}`);

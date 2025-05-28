@@ -25,6 +25,7 @@ import { toast } from "sonner";
 import axios from "axios";
 import useViewport from "@/hooks/useViewPort";
 import { useTheme } from "next-themes";
+import useBookmarkStore from "@/store/bookmarkStore";
 
 type NavItemProps = {
   icon: React.ReactNode;
@@ -195,6 +196,7 @@ export function Sidebar() {
       );
       if (res.status === 200) {
         clearUser();
+        useBookmarkStore.persist.clearStorage();
         toast.success("Logout successful");
         window.location.href = "/";
       }

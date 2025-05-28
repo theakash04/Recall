@@ -159,7 +159,6 @@ router.get("/search", async (req: Request, res: Response) => {
     return;
   }
 
-  console.log(queryParams);
 
   // implement logic of search with url
   try {
@@ -181,7 +180,6 @@ router.get("/search", async (req: Request, res: Response) => {
         });
         break;
       case "keyword":
-        console.log("keyword_search");
         // keyword search
         results = await keyword_search({
           query,
@@ -189,7 +187,6 @@ router.get("/search", async (req: Request, res: Response) => {
         });
         break;
       case "semantic":
-        console.log("semantic");
         // semantic search
         results = await semantic_search({
           queryEmbedding: embedding,
@@ -197,7 +194,6 @@ router.get("/search", async (req: Request, res: Response) => {
         });
         break;
       case "hybrid":
-        console.log("hybrid");
         // hybrid search
         results = await hybrid_search({
           query,
@@ -213,7 +209,6 @@ router.get("/search", async (req: Request, res: Response) => {
       size: results.length,
     });
   } catch (err) {
-    console.log(err);
     res.status(500).json({
       message: "Something Unexpected happend!",
     });
@@ -275,7 +270,6 @@ router.get("/get-all-bookmarks", async (req: Request, res: Response) => {
       )
       .where(eq(schema.usersBookmarks.userId, user.id));
 
-    console.log(bookmarks);
 
     res.status(200).json({
       data: bookmarks,

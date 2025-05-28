@@ -3,7 +3,7 @@ import supabase from "../supabase/supabaseClient";
 
 const guardApi = async (req: Request, res: Response, next: NextFunction) => {
   let access_token: string = req.cookies?.sb_token;
-  const refresh_token: string = req.cookies?.sb_refresh;
+  let refresh_token: string = req.cookies?.sb_refresh;
 
   if (!access_token || !refresh_token) {
     res.status(401).json({
@@ -26,12 +26,13 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
       res.status(401).json({
         status: 401,
         message: "unable to refresh Token",
-        error: refreshError,
+        error: refreshError?.message,
       });
       return;
     }
     const newAccessToken = refreshData.session?.access_token;
-    const expiresIn = refreshData.session?.expires_in;
+    const newRefreshToken = refreshData.session?.refresh_token;
+    const expiresIn = refreshData.session.expires_in;
 
     res.cookie("sb_token", newAccessToken, {
       httpOnly: true,
@@ -40,7 +41,16 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
       maxAge: expiresIn ? expiresIn * 1000 : 15 * 60 * 1000,
     });
 
-    access_token = newAccessToken || "";
+    res.cookie("sb_refresh", newRefreshToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+
+    access_token = newAccessToken;
+    refresh_token = newRefreshToken;
+
     const result = await supabase.auth.getUser(access_token);
 
     if (result.error || !result.data.user) {
@@ -62,7 +72,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
     return;
   }
 
-  // Attatch user to request for downstream handler
+  // Attach user to request for downstream handler
   (req as any).user = {
     id: userData.user.id,
     ...userData.user?.user_metadata,

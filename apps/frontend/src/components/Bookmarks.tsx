@@ -29,7 +29,7 @@ const normalizeUrl = (url: string): string => {
 
 const BookmarkCard = ({ bookmark }: { bookmark: bookmark }) => {
   async function handleRetry(id: string) {
-    console.log(id);
+    // handle job retry!
   }
   return (
     <div className="relative group">

@@ -61,8 +61,7 @@ const useChatStore = create<chatStore>()((set) => ({
         messages: [...state.messages, aiMsg],
         isLoading: false,
       }));
-    } catch (err) {
-      console.log(err);
+    } catch {
       set({ isLoading: false });
     }
   },

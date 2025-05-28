@@ -5,16 +5,19 @@ import { useEffect } from "react";
 import { toast } from "sonner";
 
 export default function Page() {
-
-  const { getAllBookmarks } = useBookmarkStore();
+  const { getAllBookmarks, bookmarks } = useBookmarkStore();
 
   useEffect(() => {
     const fetchBookmarks = async () => {
-      try {
-        await getAllBookmarks();
-      } catch (error) {
-        console.error("Failed to fetch bookmarks:", error);
-        toast.error("Failed to fetch bookmarks. Please try again later.");
+      if (bookmarks.length === 0) {
+        try {
+          await getAllBookmarks();
+        } catch (error) {
+          console.error("Failed to fetch bookmarks:", error);
+          toast.error("Failed to fetch bookmarks. Please try again later.", {
+            description: error as string,
+          });
+        }
       }
     };
 

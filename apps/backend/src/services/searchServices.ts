@@ -157,8 +157,6 @@ async function hybrid_search(params: hybridParams): Promise<searchResult[]> {
     }),
   ]);
 
-  console.log(kwHits);
-  console.log(semHits);
 
   // rank maps
   const kwRank = new Map<string, number>();
@@ -217,12 +215,9 @@ async function hybrid_search(params: hybridParams): Promise<searchResult[]> {
     });
   }
 
-  console.log(fused);
-  console.log("printed fused");
 
   // sort and trim
   fused.sort((a, b) => b.rrfScore! - a.rrfScore!);
-  console.log("some:", fused.slice(0, match_count));
   return fused.slice(0, match_count);
 }
 

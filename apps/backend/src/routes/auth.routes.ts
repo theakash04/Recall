@@ -47,7 +47,6 @@ router.get("/callback", async (req: Request, res: Response) => {
   }
 
   const { session, user } = data;
-  console.log(user.user_metadata);
 
   res.cookie("sb_token", session?.access_token, {
     httpOnly: true,

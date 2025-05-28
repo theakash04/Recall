@@ -37,7 +37,6 @@ export default function Protected({
   useEffect(() => {
     nProgress.start();
     nProgress.done();
-    console.log("Pathname changed:", pathname);
   }, [pathname]);
 
   async function fetchUser() {
@@ -51,8 +50,7 @@ export default function Protected({
       if (res.status === 200) {
         setUser(res.data);
       }
-    } catch (err) {
-      console.log("Error fetching user data", err);
+    } catch {
       toast.error("Error fetching user data", {
         description: "Please Login.",
       });

@@ -9,7 +9,6 @@ export default function Page() {
   const handleAccountDeletion = () => {
     setOpen(false);
     // Logic to delete the account goes here
-    console.log("Account deleted");
   };
 
   return (
