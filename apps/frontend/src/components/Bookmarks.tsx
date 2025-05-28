@@ -11,7 +11,6 @@ import useBookmarkStore from "@/store/bookmarkStore";
 import { bookmark } from "@/types/bookmarkTypes";
 import clsx from "clsx";
 import { ChevronDown, CircleAlert, RefreshCw, X } from "lucide-react";
-import FullScreenLoader from "./Loading";
 
 const URL_REGEX = /^(https:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/i;
 
@@ -194,11 +193,10 @@ export default function Bookmarks() {
       if (axios.isAxiosError(err) && err.response) {
         const statusCode = err.response.status;
         const serverError = err.response.data?.error;
-
         // Try to extract the first detailed message from nested _errors if present
         const firstFieldError =
           typeof serverError === "object" &&
-          Object.values(serverError)
+          (Object.values(serverError)
             .flat()
             .find(
               (field: any) =>
@@ -206,10 +204,10 @@ export default function Bookmarks() {
                 typeof field === "object" &&
                 Array.isArray((field as any)._errors) &&
                 (field as any)._errors.length > 0
-            )?._errors?.[0];
+            ) as any);
+        const errorMessage = firstFieldError?._errors?.[0];
         const fallbackMessage = `Request failed with status ${statusCode}.`;
-
-        toast.error(firstFieldError || fallbackMessage);
+        toast.error(errorMessage || fallbackMessage);
       } else {
         toast.error("Something unexpected happened!");
       }
