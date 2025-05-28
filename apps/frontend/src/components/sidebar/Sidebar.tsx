@@ -10,6 +10,10 @@ import {
   LogOut,
   BotIcon,
   PanelLeft,
+  MoonIcon,
+  SunIcon,
+  DownloadIcon,
+  MessagesSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { useSidebarStore } from "@/store/sideBarStore";
@@ -20,6 +24,7 @@ import { usePathname } from "next/navigation";
 import { toast } from "sonner";
 import axios from "axios";
 import useViewport from "@/hooks/useViewPort";
+import { useTheme } from "next-themes";
 
 type NavItemProps = {
   icon: React.ReactNode;
@@ -162,6 +167,7 @@ export function Sidebar() {
   const viewport = useViewport();
   const { isExpanded, setExpanded, toggleSidebar } = useSidebarStore();
   const { userData, clearUser } = useUserStore();
+  const { setTheme, theme } = useTheme();
 
   const collapseOnMobile = () => {
     if (viewport === "mobile") {
@@ -263,6 +269,51 @@ export function Sidebar() {
           href="/chat"
           onClick={collapseOnMobile}
         />
+        <NavItem
+          icon={<Settings size={18} />}
+          label="Settings"
+          href="/settings"
+          onClick={collapseOnMobile}
+        />
+        <NavItem
+          icon={<MessagesSquare size={18} />}
+          label="Feedback"
+          href="/feedback"
+          onClick={collapseOnMobile}
+        />
+      </div>
+      <div className=" border-sidebar-border py-2 space-y-1 w-full">
+        <NavItem
+          icon={
+            theme === "dark" ? <SunIcon size={18} /> : <MoonIcon size={18} />
+          }
+          label="Change Theme"
+          onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+        />
+        {isExpanded ? (
+          <div className="px-3 py-4 mx-2 rounded-md bg-muted/40 text-sm flex flex-col items-start gap-3 border border-muted">
+            <div className="font-medium text-foreground">Get the Extension</div>
+            <p className="text-muted-foreground text-xs leading-snug">
+              Install our browser extension to save bookmarks instantly.
+            </p>
+            <a
+              href="#"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs bg-primary text-primary-foreground px-3 py-1 rounded hover:bg-primary/90 transition "
+            >
+              Download Extension
+            </a>
+          </div>
+        ) : (
+          <NavItem
+            icon={<DownloadIcon size={18} />} // or a download icon like `DownloadIcon`
+            label="Download Extension"
+            onClick={() => {
+              window.open("#", "_blank");
+            }}
+          />
+        )}
       </div>
 
       {/* Footer */}
@@ -271,12 +322,6 @@ export function Sidebar() {
           icon={<HelpCircle size={18} />}
           label="Help"
           href="/help"
-          onClick={collapseOnMobile}
-        />
-        <NavItem
-          icon={<Settings size={18} />}
-          label="Settings"
-          href="/settings"
           onClick={collapseOnMobile}
         />
         <NavItem

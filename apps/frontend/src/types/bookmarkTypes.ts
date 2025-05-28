@@ -1,9 +1,3 @@
-export type searchQuery = {
-  query?: string;
-  url?: string;
-  search_type: "url" | "keyword" | "semantic" | "hybrid";
-};
-
 export type JobStatusType =
   | "pending"
   | "scraped"
@@ -19,6 +13,8 @@ export type bookmark = {
   isFailed: boolean;
   error: string;
   createdAt: Date;
+  rrfScore?: number;
+  similarity?: number;
 };
 
 export type newBookmark = {

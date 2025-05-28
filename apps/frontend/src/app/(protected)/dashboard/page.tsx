@@ -3,43 +3,9 @@ import Bookmarks from "@/components/Bookmarks";
 import useBookmarkStore from "@/store/bookmarkStore";
 import { useEffect } from "react";
 import { toast } from "sonner";
-// import { BookmarkFormData, inputBookmarkSchema } from "@/zod/bookmarkSchema";
-// import { zodResolver } from "@hookform/resolvers/zod";
-// import axios from "axios";
-// import { useForm } from "react-hook-form";
-// import { toast } from "sonner";
 
 export default function Page() {
-  // const {
-  //   register,
-  //   handleSubmit,
-  //   formState: { errors },
-  //   reset,
-  // } = useForm<BookmarkFormData>({
-  //   resolver: zodResolver(inputBookmarkSchema),
-  // });
 
-  // const onSubmit = async (data: BookmarkFormData) => {
-  //   console.log("Submitted URL:", data.url);
-  //   const res = await axios.post(
-  //     `${process.env.NEXT_PUBLIC_SERVER_API}/add-bookmark`,
-  //     data,
-  //     {
-  //       withCredentials: true,
-  //     }
-  //   );
-  //   console.log(res);
-  //   reset();
-  // };
-
-  // const onError = (formError: typeof errors) => {
-  //   const urlError = formError.url?.message;
-  //   if (urlError) {
-  //     toast.error("Input field Error", {
-  //       description: urlError,
-  //     });
-  //   }
-  // };
   const { getAllBookmarks } = useBookmarkStore();
 
   useEffect(() => {

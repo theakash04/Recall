@@ -5,6 +5,7 @@ import { create } from "zustand";
 type bookmarksStore = {
   bookmarks: bookmark[];
   isLoading: boolean;
+  setIsLoading: (value: boolean) => void;
   AddBookmark: (newBookmark: newBookmark) => Promise<void>;
   getAllBookmarks: () => Promise<void>;
 };
@@ -12,6 +13,9 @@ type bookmarksStore = {
 const useBookmarkStore = create<bookmarksStore>()((set) => ({
   bookmarks: [],
   isLoading: false,
+  setIsLoading: (value) => {
+    set({ isLoading: value });
+  },
   AddBookmark: async (newBookmark) => {
     set({ isLoading: true });
     try {
@@ -27,10 +31,10 @@ const useBookmarkStore = create<bookmarksStore>()((set) => ({
         isLoading: false,
       }));
     } catch (err) {
-      console.error(err);
       set({
         isLoading: false,
       });
+      throw err;
     }
   },
   getAllBookmarks: async () => {
