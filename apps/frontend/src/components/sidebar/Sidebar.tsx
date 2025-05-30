@@ -1,5 +1,4 @@
 "use client";
-
 import type React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -20,12 +19,12 @@ import { useSidebarStore } from "@/store/sideBarStore";
 import { useUserStore } from "@/store/useStore";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
-import axios from "axios";
 import useViewport from "@/hooks/useViewPort";
 import { useTheme } from "next-themes";
-import useBookmarkStore from "@/store/bookmarkStore";
+import { logoutUser } from "@/lib/userApi";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 type NavItemProps = {
   icon: React.ReactNode;
@@ -165,10 +164,12 @@ const NavItem = ({
 };
 
 export function Sidebar() {
+  const queryClient = useQueryClient();
   const viewport = useViewport();
   const { isExpanded, setExpanded, toggleSidebar } = useSidebarStore();
   const { userData, clearUser } = useUserStore();
   const { setTheme, theme } = useTheme();
+  const router = useRouter();
 
   const collapseOnMobile = () => {
     if (viewport === "mobile") {
@@ -186,27 +187,18 @@ export function Sidebar() {
     }
   }, [viewport, setExpanded]);
 
-  async function handleLogout() {
-    try {
-      const res = await axios.get(
-        `${process.env.NEXT_PUBLIC_SERVER_API}/auth/logout`,
-        {
-          withCredentials: true,
-        }
-      );
-      if (res.status === 200) {
-        clearUser();
-        useBookmarkStore.persist.clearStorage();
-        toast.success("Logout successful");
-        window.location.href = "/";
-      }
-    } catch (err) {
-      console.error("Logout error", err);
-      toast.error("Logout failed", {
-        description: "Please try again.",
-      });
-    }
-  }
+  const { mutateAsync } = useMutation({
+    mutationFn: logoutUser,
+    onSuccess() {
+      queryClient.cancelQueries({ queryKey: ["user"] });
+      router.replace("/");
+      toast.info("Logout successfully!");
+      clearUser();
+    },
+    onError() {
+      toast.error("Logout failed!");
+    },
+  });
 
   return (
     <motion.div
@@ -329,7 +321,7 @@ export function Sidebar() {
         <NavItem
           icon={<LogOut size={18} />}
           label="Logout"
-          onClick={handleLogout}
+          onClick={async () => await mutateAsync()}
         />
       </div>
     </motion.div>

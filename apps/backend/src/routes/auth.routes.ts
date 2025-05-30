@@ -52,12 +52,14 @@ router.get("/callback", async (req: Request, res: Response) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    path: "/",
     maxAge: session?.expires_in ? session?.expires_in * 1000 : 15 * 60 * 1000,
   });
   res.cookie("sb_refresh", session?.refresh_token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
+    path: "/",
     maxAge: 7 * 24 * 60 * 60 * 1000,
   });
 

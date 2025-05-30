@@ -38,6 +38,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
+      path: "/",
       maxAge: expiresIn ? expiresIn * 1000 : 15 * 60 * 1000,
     });
 
@@ -45,6 +46,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
+      path: "/",
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 

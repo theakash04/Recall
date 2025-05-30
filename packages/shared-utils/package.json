@@ -12,6 +12,10 @@
     "./genEmbeddings": {
       "types": "./dist/genEmbeddings.d.ts",
       "default": "./dist/genEmbeddings.js"
+    },
+    "./sharedTypes": {
+      "types": "./dist/types/index.d.ts",
+      "default": "./dist/types/index.js"
     }
   },
   "devDependencies": {

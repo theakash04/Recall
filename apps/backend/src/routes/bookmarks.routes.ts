@@ -136,6 +136,7 @@ router.post("/add-bookmark", async (req: Request, res: Response) => {
 
 router.get("/search", async (req: Request, res: Response) => {
   const user = (req as any).user;
+  console.log(req.query)
 
   // pass to zod for validation
   const queryParams = getQuerySchema.safeParse({

@@ -5,12 +5,16 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
 import { AnimatePresence, motion } from "framer-motion";
-import axios from "axios";
 import { toast } from "sonner";
-import useBookmarkStore from "@/store/bookmarkStore";
 import { bookmark } from "@/types/bookmarkTypes";
 import clsx from "clsx";
 import { ChevronDown, CircleAlert, RefreshCw, X } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  addBookmark,
+  fetchBookmarks,
+  searchBookmark,
+} from "@/lib/bookmarksApi";
 
 const URL_REGEX = /^(https:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/i;
 
@@ -136,24 +140,50 @@ const BookmarkCard = ({ bookmark }: { bookmark: bookmark }) => {
 };
 
 export default function Bookmarks() {
-  const { getAllBookmarks, isLoading, AddBookmark, bookmarks } =
-    useBookmarkStore();
-  const [isSearchLoading, setSearchIsLoading] = useState(false);
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredBookmarks, setFilteredBookmarks] =
-    useState<bookmark[]>(bookmarks);
   const [isUrlNotFound, setIsUrlNotFound] = useState<string | null>(null);
-  const [searchType, setSearchType] = useState("keyword");
+  const [searchResults, setSearchResults] = useState<bookmark[]>([]);
+  const [searchType, setSearchType] = useState<string>("keyword");
+  const [HasSearch, setHasSearch] = useState<boolean>(false);
 
   const isURL = useCallback((str: string) => URL_REGEX.test(str), []);
 
+  const {
+    data: bookmarks = [],
+    isLoading,
+    refetch,
+  } = useQuery<bookmark[]>({
+    queryKey: ["bookmarks"],
+    queryFn: fetchBookmarks,
+    staleTime: 1000 * 60 * 5,
+  });
+
+  const { mutateAsync, error: addError } = useMutation({
+    mutationFn: addBookmark,
+    onSuccess() {
+      queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
+      }, 15000);
+    },
+  });
+
+  const {
+    mutateAsync: searchFn,
+    isPending: isSearchPending,
+    error: searchError,
+  } = useMutation({
+    mutationKey: ["bookmarks"],
+    mutationFn: searchBookmark,
+  });
+
   const handleSearch = useCallback(async () => {
     const query = searchQuery.trim();
-    setSearchIsLoading(true);
 
     if (!query) {
-      setSearchIsLoading(false);
-      setFilteredBookmarks(bookmarks);
+      setSearchResults([]);
+      setHasSearch(false);
       setIsUrlNotFound(null);
       return;
     }
@@ -163,88 +193,61 @@ export default function Bookmarks() {
       ? normalizeUrl(query)
       : query.toLowerCase();
     const effectiveSearchType = isUrlSearch ? "url" : searchType;
-    const searchKey = isUrlSearch
-      ? { url: normalizedQuery }
-      : { query: normalizedQuery };
+    const searchKey = { query: normalizedQuery };
 
     try {
-      const response = await axios.get(
-        `${process.env.NEXT_PUBLIC_SERVER_API}/search`,
-        {
-          params: {
-            ...searchKey,
-            search_type: effectiveSearchType,
-          },
-          withCredentials: true,
-        }
-      );
-
-      const results = response.data.data;
-
-      setFilteredBookmarks(results);
-
-      if (results.length === 0) {
+      const result = await searchFn({
+        ...searchKey,
+        search_type: effectiveSearchType,
+      });
+      setSearchResults(result);
+      setHasSearch(true);
+      if (result?.length === 0) {
         toast.info("No result found!");
         if (isUrlSearch) setIsUrlNotFound(normalizedQuery);
       } else {
         setIsUrlNotFound(null);
       }
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response) {
-        const statusCode = err.response.status;
-        const serverError = err.response.data?.error;
-        // Try to extract the first detailed message from nested _errors if present
-        const firstFieldError =
-          typeof serverError === "object" &&
-          (Object.values(serverError)
-            .flat()
-            .find(
-              (field: any) =>
-                field &&
-                typeof field === "object" &&
-                Array.isArray((field as any)._errors) &&
-                (field as any)._errors.length > 0
-            ) as any);
-        const errorMessage = firstFieldError?._errors?.[0];
-        const fallbackMessage = `Request failed with status ${statusCode}.`;
-        toast.error(errorMessage || fallbackMessage);
-      } else {
-        toast.error("Something unexpected happened!");
-      }
-    } finally {
-      setSearchIsLoading(false);
+    } catch {
+      toast.error(searchError?.message);
     }
-  }, [searchQuery, isURL, bookmarks, searchType]);
-
-  useEffect(() => {
-    setFilteredBookmarks(bookmarks);
-  }, [bookmarks]);
+  }, [searchQuery, isURL, searchType, searchFn, searchError, queryClient]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") handleSearch();
   };
 
-  async function handleAddUrl() {
+  async function handleAddBookmark() {
     const url = searchQuery.trim();
-    if (!url) return;
 
-    if (!isURL(url)) {
+    if (!url && !isURL(url)) {
       toast.warning("Please enter a valid URL.");
       return;
     }
 
     const normalizedUrl = normalizeUrl(url);
     try {
-      await AddBookmark({
-        url: normalizedUrl,
-      });
+      await mutateAsync({ url: normalizedUrl });
       toast.success("Bookmark added successfully!");
       setSearchQuery("");
       handleSearch();
-    } catch (_err) {
-      toast.error("Failed to add bookmark. Please try again.");
+    } catch {
+      toast.error("Failed to add bookmark. Please try again.", {
+        description: addError?.message,
+      });
     }
   }
+
+  useEffect(() => {
+    setHasSearch(false);
+  }, [searchQuery]);
+
+  const isLoadingState = isSearchPending || isLoading;
+  const resultsToDisplay = HasSearch
+    ? searchResults
+    : searchQuery.trim() === ""
+      ? bookmarks
+      : [];
 
   return (
     <div className="w-full flex flex-col gap-6 h-max py-6">
@@ -312,7 +315,7 @@ export default function Bookmarks() {
           variant={"outline"}
           className="flex items-center justify-center cursor-pointer"
           disabled={isLoading}
-          onClick={() => getAllBookmarks()}
+          onClick={() => refetch()}
         >
           <RefreshCw />
           Refresh
@@ -321,7 +324,7 @@ export default function Bookmarks() {
 
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 overflow-y-hidden overflow-x-hidden md:px-6 px-0">
         <AnimatePresence mode="popLayout">
-          {isSearchLoading || isLoading ? (
+          {isLoadingState ? (
             <motion.div
               key="loader"
               initial={{ opacity: 0, y: 10 }}
@@ -353,13 +356,13 @@ export default function Bookmarks() {
                 ></path>
               </svg>
               <span className="text-sm">
-                {isSearchLoading
+                {isSearchPending
                   ? "Searching bookmarks..."
                   : "Loading bookmarks..."}
               </span>
             </motion.div>
-          ) : filteredBookmarks.length > 0 ? (
-            filteredBookmarks.map((bookmark, idx) => (
+          ) : resultsToDisplay.length > 0 ? (
+            resultsToDisplay.map((bookmark, idx) => (
               <BookmarkCard
                 key={bookmark.bookmarkId ?? idx}
                 bookmark={bookmark}
@@ -376,8 +379,8 @@ export default function Bookmarks() {
               <p>
                 No bookmark found for: <strong>{isUrlNotFound}</strong>
               </p>
-              <Button variant="secondary" onClick={handleAddUrl}>
-                Add this URL
+              <Button variant="secondary" onClick={handleAddBookmark}>
+                Add this Bookmark
               </Button>
             </motion.div>
           ) : (
@@ -388,7 +391,10 @@ export default function Bookmarks() {
               exit={{ opacity: 0 }}
               className="text-center text-muted-foreground col-span-full"
             >
-              No matches found. Try different keywords.
+              {searchQuery.trim() && !HasSearch
+                ? null
+                : "Empty for now. Try a search or add one."}
+              Empty for now. Try a search or add one.
             </motion.div>
           )}
         </AnimatePresence>

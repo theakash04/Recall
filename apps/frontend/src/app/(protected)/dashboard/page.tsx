@@ -1,29 +1,7 @@
 "use client";
 import Bookmarks from "@/components/Bookmarks";
-import useBookmarkStore from "@/store/bookmarkStore";
-import { useEffect } from "react";
-import { toast } from "sonner";
 
 export default function Page() {
-  const { getAllBookmarks, bookmarks } = useBookmarkStore();
-
-  useEffect(() => {
-    const fetchBookmarks = async () => {
-      if (bookmarks.length === 0) {
-        try {
-          await getAllBookmarks();
-        } catch (error) {
-          console.error("Failed to fetch bookmarks:", error);
-          toast.error("Failed to fetch bookmarks. Please try again later.", {
-            description: error as string,
-          });
-        }
-      }
-    };
-
-    fetchBookmarks();
-  }, []);
-
   return (
     <div className="flex flex-1 flex-col gap-4 pt-0 px-4 my-4">
       <div className="grid auto-rows-min gap-4 lg:grid-cols-1 grid-cols-1">
