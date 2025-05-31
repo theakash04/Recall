@@ -12,9 +12,11 @@ import { ChevronDown, CircleAlert, RefreshCw, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   addBookmark,
+  BookmarkJobRetry,
   fetchBookmarks,
   searchBookmark,
 } from "@/lib/bookmarksApi";
+import { ApiResponse } from "@/types/apiResponse";
 
 const URL_REGEX = /^(https:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/i;
 
@@ -32,8 +34,18 @@ const normalizeUrl = (url: string): string => {
 };
 
 const BookmarkCard = ({ bookmark }: { bookmark: bookmark }) => {
+  const queryClient = useQueryClient();
   async function handleRetry(id: string) {
-    // handle job retry!
+    const response = await BookmarkJobRetry(id);
+    if (response.success) {
+      queryClient.refetchQueries({ queryKey: ["bookmarks"] });
+      toast.info(response.message);
+      return;
+    }
+
+    toast.error(response.error.code, {
+      description: response.error.message,
+    });
   }
   return (
     <div className="relative group">
@@ -150,10 +162,10 @@ export default function Bookmarks() {
   const isURL = useCallback((str: string) => URL_REGEX.test(str), []);
 
   const {
-    data: bookmarks = [],
+    data: bookmarksResponse = [],
     isLoading,
     refetch,
-  } = useQuery<bookmark[]>({
+  } = useQuery<ApiResponse<bookmark[]>>({
     queryKey: ["bookmarks"],
     queryFn: fetchBookmarks,
     staleTime: 1000 * 60 * 5,
@@ -200,13 +212,22 @@ export default function Bookmarks() {
         ...searchKey,
         search_type: effectiveSearchType,
       });
-      setSearchResults(result);
-      setHasSearch(true);
-      if (result?.length === 0) {
-        toast.info("No result found!");
-        if (isUrlSearch) setIsUrlNotFound(normalizedQuery);
+
+      if ("data" in result) {
+        const data = result.data;
+
+        setSearchResults(data);
+        setHasSearch(true);
+        if (data.length === 0) {
+          toast.info("No result found!");
+          if (isUrlSearch) setIsUrlNotFound(normalizedQuery);
+        } else {
+          setIsUrlNotFound(null);
+        }
       } else {
-        setIsUrlNotFound(null);
+        toast.error(result.error.code, {
+          description: result.error.message,
+        });
       }
     } catch {
       toast.error(searchError?.message);
@@ -246,7 +267,9 @@ export default function Bookmarks() {
   const resultsToDisplay = HasSearch
     ? searchResults
     : searchQuery.trim() === ""
-      ? bookmarks
+      ? bookmarksResponse && "data" in bookmarksResponse
+        ? bookmarksResponse.data
+        : []
       : [];
 
   return (

@@ -143,7 +143,7 @@ LIMIT ${match_count}
  * @returns {Promise<searchResult[]>} - The search results.
  */
 async function hybrid_search(params: hybridParams): Promise<searchResult[]> {
-  const k = params.rrf_constant ?? 60;
+  let k = params.rrf_constant ?? 1;
 
   // starting both queries in parallel
   const [kwHits, semHits] = await Promise.all([
@@ -157,6 +157,7 @@ async function hybrid_search(params: hybridParams): Promise<searchResult[]> {
     }),
   ]);
 
+  if (kwHits.length > 100 || semHits.length > 100) k = 60;
 
   // rank maps
   const kwRank = new Map<string, number>();
@@ -214,7 +215,6 @@ async function hybrid_search(params: hybridParams): Promise<searchResult[]> {
       createdAt: rec.createdAt,
     });
   }
-
 
   // sort and trim
   fused.sort((a, b) => b.rrfScore! - a.rrfScore!);

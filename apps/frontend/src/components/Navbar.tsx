@@ -19,9 +19,12 @@ export default function Navbar({ animate = true }) {
       className="border-b border-border sticky top-0 z-50 bg-background/50 backdrop-blur-sm"
     >
       <div className="container mx-auto flex h-16 items-center justify-between px-4">
-        <div className="flex items-center gap-2 font-semibold text-foreground">
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-semibold text-foreground"
+        >
           <span>Recall</span>
-        </div>
+        </Link>
         <nav className="flex items-center gap-6">
           <ThemeToggle />
           <Button asChild>

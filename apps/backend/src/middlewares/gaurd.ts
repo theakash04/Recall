@@ -1,15 +1,16 @@
 import { NextFunction, Request, Response } from "express";
 import supabase from "../supabase/supabaseClient";
+import { ErrorCodes } from "@repo/utils/sharedTypes";
+import { CreateErrorResponse } from "../utils/ResponseHandler";
 
 const guardApi = async (req: Request, res: Response, next: NextFunction) => {
   let access_token: string = req.cookies?.sb_token;
   let refresh_token: string = req.cookies?.sb_refresh;
 
   if (!access_token || !refresh_token) {
-    res.status(401).json({
-      status: 401,
-      message: "No token provided!",
-    });
+    res
+      .status(401)
+      .json(CreateErrorResponse(ErrorCodes.NO_TOKEN, "No token provided!"));
     return;
   }
 
@@ -23,11 +24,15 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
       });
 
     if (refreshError || !refreshData.session) {
-      res.status(401).json({
-        status: 401,
-        message: "unable to refresh Token",
-        error: refreshError?.message,
-      });
+      res
+        .status(401)
+        .json(
+          CreateErrorResponse(
+            ErrorCodes.REFRESH_FAILED,
+            "Unable to refresh token",
+            refreshError?.message
+          )
+        );
       return;
     }
     const newAccessToken = refreshData.session?.access_token;
@@ -56,10 +61,11 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
     const result = await supabase.auth.getUser(access_token);
 
     if (result.error || !result.data.user) {
-      res.status(401).json({
-        status: 401,
-        message: "Authentication Failed!",
-      });
+      res
+        .status(401)
+        .json(
+          CreateErrorResponse(ErrorCodes.AUTH_FAILED, "Authentication failed!")
+        );
       return;
     }
 
@@ -67,10 +73,11 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   if (!userData?.user?.user_metadata) {
-    res.status(401).json({
-      status: 401,
-      message: "Not Authenticated!",
-    });
+    res
+      .status(401)
+      .json(
+        CreateErrorResponse(ErrorCodes.NOT_AUTHENTICATED, "Not Authenticated!")
+      );
     return;
   }
 

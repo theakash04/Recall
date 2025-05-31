@@ -56,3 +56,7 @@ export const addUrlSchema = z.object({
       message: "Minimum length of url should be 12",
     }),
 });
+
+export const jobRetrySchema = z.object({
+  bookmarkId: z.string(),
+});

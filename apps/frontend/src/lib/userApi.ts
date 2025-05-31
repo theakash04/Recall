@@ -1,34 +1,24 @@
+import { ApiResponse } from "@/types/apiResponse";
 import { user } from "@/types/userTypes";
 import axios from "axios";
-import { toast } from "sonner";
 
-export async function fetchUser() {
-  try {
-    const res = await axios.get<user>(
-      `${process.env.NEXT_PUBLIC_SERVER_API}/auth/get-user`,
-      {
-        withCredentials: true,
-      }
-    );
-
-    if (res.status === 200) {
-      return res.data;
+export async function fetchUser(): Promise<ApiResponse<user>> {
+  const res = await axios.get<ApiResponse<user>>(
+    `${process.env.NEXT_PUBLIC_SERVER_API}/auth/get-user`,
+    {
+      withCredentials: true,
     }
-  } catch (err) {
-    toast.error("Please login again!", {
-      description: "Error fetching user data!",
-    });
-    throw err;
-  }
+  );
+
+  return res.data;
 }
 
-export async function logoutUser() {
-  const res = await axios.get(
+export async function logoutUser(): Promise<ApiResponse<undefined>> {
+  const res = await axios.get<ApiResponse<undefined>>(
     `${process.env.NEXT_PUBLIC_SERVER_API}/auth/logout`,
     {
       withCredentials: true,
     }
   );
-  if (res.status === 200) return true;
-  return false;
+  return res.data;
 }

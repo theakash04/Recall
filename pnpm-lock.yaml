@@ -126,6 +126,9 @@ importers:
       '@radix-ui/react-slot':
         specifier: ^1.2.3
         version: 1.2.3(@types/react@19.1.5)(react@19.1.0)
+      '@repo/utils':
+        specifier: workspace:*
+        version: link:../../packages/shared-utils
       '@tanstack/react-query':
         specifier: ^5.77.2
         version: 5.77.2(react@19.1.0)

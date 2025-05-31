@@ -1,25 +1,29 @@
+import { ApiResponse } from "@/types/apiResponse";
 import { bookmark, newBookmark } from "@/types/bookmarkTypes";
+import { ErrorResponse } from "@repo/utils/sharedTypes";
 import axios from "axios";
 
-export async function fetchBookmarks(): Promise<bookmark[]> {
-  const response = await axios.get(
+export async function fetchBookmarks(): Promise<ApiResponse<bookmark[]>> {
+  const response = await axios.get<ApiResponse<bookmark[]>>(
     `${process.env.NEXT_PUBLIC_SERVER_API}/get-all-bookmarks`,
     {
       withCredentials: true,
     }
   );
 
-  return response.data.data;
+  return response.data;
 }
 
-export async function addBookmark(bookmarks: newBookmark): Promise<bookmark> {
-  const response = await axios.post(
+export async function addBookmark(
+  bookmarks: newBookmark
+): Promise<ApiResponse<bookmark>> {
+  const response = await axios.post<ApiResponse<bookmark>>(
     `${process.env.NEXT_PUBLIC_SERVER_API}/add-bookmark`,
     { url: bookmarks.url },
     { withCredentials: true }
   );
 
-  return response.data.data;
+  return response.data;
 }
 
 type searchParams = {
@@ -29,34 +33,43 @@ type searchParams = {
 
 export async function searchBookmark(
   params: searchParams
-): Promise<bookmark[]> {
+): Promise<ApiResponse<bookmark[]>> {
   if (!params.query) {
     throw new Error("'query' must be provided");
   }
 
-  const response = await axios.get(
+  const response = await axios.get<ApiResponse<bookmark[]>>(
     `${process.env.NEXT_PUBLIC_SERVER_API}/search`,
     {
-      params: {
-        query: params.query,
-        search_type: params.search_type,
-      },
+      params,
       withCredentials: true,
     }
   );
 
   const data = response.data;
 
-  if (response.status >= 400 || data?.error) {
-    // Extract a more useful message
-    const queryError = data?.error?.query?._errors?.[0];
-    const generalError = data?.error?._errors?.[0];
-
+  // Handle error response shape from the backend
+  if (!data.success) {
+    const queryError = (data as ErrorResponse)?.error?.details;
     const message =
-      queryError || generalError || "Search request failed unexpectedly.";
+      queryError || data.error.message || "Search request failed unexpectedly.";
 
     throw new Error(message);
   }
 
-  return data.data;
+  return data;
+}
+
+export async function BookmarkJobRetry(
+  bookmarkId: string
+): Promise<ApiResponse<undefined>> {
+  const response = await axios.post<ApiResponse<undefined>>(
+    `${process.env.NEXT_PUBLIC_SERVER_API}/retry-job`,
+    bookmarkId,
+    {
+      withCredentials: true,
+    }
+  );
+
+  return response.data;
 }

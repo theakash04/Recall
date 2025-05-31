@@ -1,6 +1,5 @@
 "use client";
 import AnimatedSection from "@/components/AnimationSection";
-import FaqSection from "@/components/Faqs";
 import Navbar from "@/components/Navbar";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, BookmarkCheck, Brain, Search } from "lucide-react";
@@ -62,7 +61,7 @@ export default function HomePage() {
             </h1>
             <p className="mb-8 text-lg text-muted-foreground md:text-xl">
               Save articles, websites, and documents. Ask questions about them
-              later. RecallMark remembers everything so you don't have to.
+              later. Recall remembers everything so you don't have to.
             </p>
             <Button asChild size="lg" className="px-8 py-6 text-lg">
               <Link href="/signin" className="flex items-center gap-2">
@@ -110,9 +109,6 @@ export default function HomePage() {
               ))}
             </div>
           </motion.section>
-
-          {/* FAQ Section */}
-          <FaqSection />
         </AnimatedSection>
       </main>
 
@@ -127,14 +123,15 @@ export default function HomePage() {
               © {new Date().getFullYear()} Recall. All rights reserved.
             </div>
             <div className="flex gap-6 text-sm text-muted-foreground">
-              <Link href="#" className="hover:text-muted-foreground/90">
-                Privacy
-              </Link>
-              <Link href="#" className="hover:text-muted-foreground/90">
+              <a
+                href="https://github.com/theakash04/recall"
+                target="_blank"
+                className="hover:text-muted-foreground/90"
+              >
                 Open Source
-              </Link>
-              <Link href="#" className="hover:text-muted-foreground/90">
-                Contact
+              </a>
+              <Link href="/help" className="hover:text-muted-foreground/90">
+                Help
               </Link>
             </div>
           </div>

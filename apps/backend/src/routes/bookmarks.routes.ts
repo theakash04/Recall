@@ -1,5 +1,9 @@
 import { Request, Response, Router } from "express";
-import { addUrlSchema, getQuerySchema } from "../types/zod/bookmarks";
+import {
+  addUrlSchema,
+  getQuerySchema,
+  jobRetrySchema,
+} from "../types/zod/bookmarks";
 import isUrlScrapable from "../utils/urlScrapableChecker";
 import * as schema from "@repo/database/schema";
 import { db } from "@repo/database/database";
@@ -15,6 +19,11 @@ import {
 import { searchResult, urlSearchReturn } from "../types/searchTypes";
 import geminiEmbedding from "@repo/utils/genEmbeddings";
 import dotenv from "dotenv";
+import { ErrorCodes } from "@repo/utils/sharedTypes";
+import {
+  CreateErrorResponse,
+  CreateSuccessResponse,
+} from "../utils/ResponseHandler";
 dotenv.config();
 
 const router: Router = Router();
@@ -29,9 +38,15 @@ router.post("/add-bookmark", async (req: Request, res: Response) => {
   // check if url is of
   const result = addUrlSchema.safeParse(req.body);
   if (!result.success) {
-    res.status(400).json({
-      error: result.error.format(),
-    });
+    res
+      .status(400)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          "Request body validation failed",
+          JSON.stringify(result.error.format())
+        )
+      );
     return;
   }
 
@@ -41,11 +56,17 @@ router.post("/add-bookmark", async (req: Request, res: Response) => {
     const isScrapable = await isUrlScrapable(url);
 
     if (!isScrapable) {
-      res.status(400).json({
-        error: "URL is not scrapable!",
-      });
+      res
+        .status(400)
+        .json(
+          CreateErrorResponse(
+            ErrorCodes.URL_NOT_SCRAPABLE,
+            "URL is not scrapable!"
+          )
+        );
       return;
     }
+
     // check if url exists in user_bookmarks
     const existsInUsersBookmarks = await db.query.usersBookmarks.findFirst({
       where: and(
@@ -55,7 +76,14 @@ router.post("/add-bookmark", async (req: Request, res: Response) => {
     });
 
     if (existsInUsersBookmarks) {
-      res.status(409).json({ error: "Bookmark already saved by user!" });
+      res
+        .status(409)
+        .json(
+          CreateErrorResponse(
+            ErrorCodes.BOOKMARK_ALREADY_EXISTS,
+            "Bookmark already saved by user!"
+          )
+        );
       return;
     }
 
@@ -74,10 +102,11 @@ router.post("/add-bookmark", async (req: Request, res: Response) => {
         })
         .returning();
 
-      res.status(200).json({
-        newUserBookmark,
-        message: "Bookmark saved successfully!",
-      });
+      res
+        .status(200)
+        .json(
+          CreateSuccessResponse(newUserBookmark, "Bookmark saved successfully!")
+        );
       return;
     }
     const [newGlobalBookmark] = await db
@@ -120,23 +149,29 @@ router.post("/add-bookmark", async (req: Request, res: Response) => {
       }
     }
 
-    res.status(200).json({
-      data: {
-        bookmark: newUserBookmark,
-      },
-      message: "Bookmark saved successfully!",
-    });
-    return;
-  } catch (_err) {
-    res.status(500).json({
-      message: "Something Unexpected happend!",
-    });
+    res
+      .status(200)
+      .json(
+        CreateSuccessResponse(
+          { bookmark: newUserBookmark },
+          "Bookmark saved successfully!"
+        )
+      );
+  } catch (err) {
+    res
+      .status(500)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.SERVER_ERROR,
+          "Something unexpected happened!",
+          err instanceof Error ? err.message : undefined
+        )
+      );
   }
 });
 
 router.get("/search", async (req: Request, res: Response) => {
   const user = (req as any).user;
-  console.log(req.query)
 
   // pass to zod for validation
   const queryParams = getQuerySchema.safeParse({
@@ -145,21 +180,32 @@ router.get("/search", async (req: Request, res: Response) => {
   });
 
   if (!queryParams.success) {
-    res.status(400).json({
-      error: queryParams.error.format(),
-    });
+    res
+      .status(400)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          "Invalid query parameters",
+          JSON.stringify(queryParams.error.format())
+        )
+      );
     return;
   }
+
   const { query, search_type } = queryParams.data;
 
   const validTypes = ["url", "keyword", "semantic", "hybrid"];
   if (!validTypes.includes(search_type)) {
-    res.status(400).json({
-      message: "Invalid search_type provided",
-    });
+    res
+      .status(400)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.INVALID_SEARCH_TYPE,
+          "Invalid search_type provided"
+        )
+      );
     return;
   }
-
 
   // implement logic of search with url
   try {
@@ -204,15 +250,19 @@ router.get("/search", async (req: Request, res: Response) => {
         break;
     }
 
-    res.status(200).json({
-      data: results,
-      message: "Searched data fetched!",
-      size: results.length,
-    });
+    res
+      .status(200)
+      .json(CreateSuccessResponse(results, "Searched data fetched!"));
   } catch (err) {
-    res.status(500).json({
-      message: "Something Unexpected happend!",
-    });
+    res
+      .status(500)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.SERVER_ERROR,
+          "Something unexpected happened!",
+          err instanceof Error ? err.message : undefined
+        )
+      );
   }
 });
 
@@ -271,16 +321,146 @@ router.get("/get-all-bookmarks", async (req: Request, res: Response) => {
       )
       .where(eq(schema.usersBookmarks.userId, user.id));
 
-
-    res.status(200).json({
-      data: bookmarks,
-      message: "All bookmarks retrieved successfully!",
-    });
+    res
+      .status(200)
+      .json(
+        CreateSuccessResponse(
+          bookmarks,
+          "All bookmarks retrieved successfully!"
+        )
+      );
   } catch (err) {
-    console.error("Error fetching bookmarks:", err);
-    res.status(500).json({
-      error: "Something unexpected happened!",
+    res
+      .status(500)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.SERVER_ERROR,
+          "Something unexpected happened!",
+          err instanceof Error ? err.message : undefined
+        )
+      );
+  }
+});
+
+router.post("/retry-job", async (req: Request, res: Response) => {
+  const user = (req as any).user;
+  if (!user?.id) {
+    throw new Error("user Id is undefined");
+  }
+
+  const queryParams = jobRetrySchema.safeParse({
+    bookmarkId: req.body.bookmarkId,
+  });
+  const { data, error, success } = queryParams;
+
+  if (error && !success) {
+    res
+      .status(400)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          "Invalid body parameter",
+          JSON.stringify(error.format())
+        )
+      );
+
+    return;
+  }
+  try {
+    const previousJobData = await db
+      .select({
+        globalBookmarkId: schema.usersBookmarks.globalBookmarkId,
+        url: schema.usersBookmarks.url,
+      })
+      .from(schema.usersBookmarks)
+      .where(
+        and(
+          eq(schema.usersBookmarks.userId, user.id),
+          eq(schema.usersBookmarks.id, data.bookmarkId)
+        )
+      )
+      .limit(1)
+      .then((row) => row[0]);
+
+    if (!previousJobData) {
+      res
+        .status(404)
+        .json(
+          CreateErrorResponse(
+            ErrorCodes.BOOKMARK_NOT_FOUND,
+            "Bookmark is not saved in user data!"
+          )
+        );
+      return;
+    }
+
+    const currentJob = await db.query.globalJobsBookmarks.findFirst({
+      where: eq(
+        schema.globalJobsBookmarks.globalBookmarkId,
+        previousJobData.globalBookmarkId
+      ),
     });
+
+    if (!currentJob) {
+      res
+        .status(404)
+        .json(
+          CreateErrorResponse(
+            ErrorCodes.JOB_NOT_FOUND,
+            "No job found for this bookmark!"
+          )
+        );
+      return;
+    }
+
+    if (!currentJob?.isFailed && !currentJob?.error) {
+      res
+        .status(400)
+        .json(
+          CreateErrorResponse(
+            ErrorCodes.JOB_IS_ALREADY_COMPLETED,
+            "Job is already running or completed successfully. No retry needed."
+          )
+        );
+      return;
+    }
+
+    const newJob = await addJob(previousJobData);
+    if (newJob.id) {
+      await db
+        .update(schema.globalJobsBookmarks)
+        .set({
+          jobId: newJob.id,
+          isFailed: false,
+          error: null,
+          updatedAt: new Date(),
+        })
+        .where(
+          eq(
+            schema.globalJobsBookmarks.globalBookmarkId,
+            previousJobData.globalBookmarkId
+          )
+        );
+    }
+
+    res
+      .status(200)
+      .json(
+        CreateSuccessResponse(
+          { jobId: newJob.id },
+          "Job Retry started successFully!"
+        )
+      );
+  } catch (err) {
+    res
+      .status(500)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.SERVER_ERROR,
+          "Something unexpected happened!",
+          err instanceof Error ? err.message : undefined
+        )
+      );
   }
 });
 

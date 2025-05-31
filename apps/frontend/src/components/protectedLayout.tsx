@@ -21,6 +21,8 @@ import { Fragment, Suspense, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchUser } from "@/lib/userApi";
 import ServerErrorPage from "./serverError";
+import { toast } from "sonner";
+import { ErrorCodes } from "@repo/utils/sharedTypes";
 
 export default function ProtectedLayout({
   children,
@@ -41,11 +43,10 @@ export default function ProtectedLayout({
   }, [pathname]);
 
   const {
-    data: user,
+    data: userResponse,
     isSuccess,
     isLoading,
     isError,
-    error,
   } = useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
@@ -54,31 +55,47 @@ export default function ProtectedLayout({
   });
 
   useEffect(() => {
-    if (isSuccess && user) {
-      setUser(user);
+    if (!isSuccess) return;
+
+    if (userResponse.success) {
+      setUser(userResponse.data);
+    } else {
+      const errorMessage = userResponse?.error?.code || "Authentication failed";
+      const errorDescription =
+        userResponse?.error?.message || "Please try again";
+
+      toast.error(errorMessage, {
+        description: errorDescription,
+      });
     }
-  }, [isSuccess, user]);
+  }, [isSuccess, userResponse, setUser]);
 
   if (isLoading) {
     return <FullScreenLoader />;
   }
 
-  if (isError || !user) {
-    // Check if error is network/server error or authentication error
-    const isAuthError =
-      error instanceof Error && /401|unauthorized/i.test(error.message);
-    const isNetworkError =
-      error instanceof Error &&
-      /network error|failed to fetch/i.test(error.message.toLowerCase());
+  if (isError) {
+    return <ServerErrorPage />;
+  }
 
-    if (isAuthError) {
+  if (!userResponse?.success) {
+    const errorCode = userResponse?.error?.code;
+    if (
+      errorCode === ErrorCodes.NOT_AUTHENTICATED ||
+      errorCode === ErrorCodes.AUTH_FAILED
+    ) {
       router.replace("/signin");
       return null;
     }
-
-    if (isNetworkError) {
+    if (errorCode === ErrorCodes.SERVER_ERROR) {
       return <ServerErrorPage />;
     }
+
+    toast.warning(userResponse?.error.code, {
+      description: userResponse?.error.message,
+    });
+    router.replace("/signin");
+    return null;
   }
 
   return (
