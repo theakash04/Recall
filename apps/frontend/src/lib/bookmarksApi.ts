@@ -1,6 +1,5 @@
 import { ApiResponse } from "@/types/apiResponse";
 import { bookmark, newBookmark } from "@/types/bookmarkTypes";
-import { ErrorResponse } from "@repo/utils/sharedTypes";
 import axios from "axios";
 
 export async function fetchBookmarks(): Promise<ApiResponse<bookmark[]>> {
@@ -46,18 +45,7 @@ export async function searchBookmark(
     }
   );
 
-  const data = response.data;
-
-  // Handle error response shape from the backend
-  if (!data.success) {
-    const queryError = (data as ErrorResponse)?.error?.details;
-    const message =
-      queryError || data.error.message || "Search request failed unexpectedly.";
-
-    throw new Error(message);
-  }
-
-  return data;
+  return response.data;
 }
 
 export async function BookmarkJobRetry(

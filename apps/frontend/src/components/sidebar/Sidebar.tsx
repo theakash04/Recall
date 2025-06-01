@@ -7,7 +7,6 @@ import {
   Settings,
   HelpCircle,
   LogOut,
-  BotIcon,
   PanelLeft,
   MoonIcon,
   SunIcon,
@@ -25,6 +24,7 @@ import useViewport from "@/hooks/useViewPort";
 import { useTheme } from "next-themes";
 import { logoutUser } from "@/lib/userApi";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import FullScreenLoader from "../Loading";
 
 type NavItemProps = {
   icon: React.ReactNode;
@@ -32,6 +32,7 @@ type NavItemProps = {
   href?: string;
   hasSubmenu?: boolean;
   submenuId?: string;
+  disabled?: boolean;
   submenuItems?: { label: string; href: string }[];
   onClick?: () => void;
   className?: string;
@@ -45,6 +46,7 @@ const NavItem = ({
   submenuId,
   submenuItems = [],
   onClick,
+  disabled = false,
   className = "",
 }: NavItemProps) => {
   const { isExpanded, activeSubmenu, setActiveSubmenu } = useSidebarStore();
@@ -78,6 +80,7 @@ const NavItem = ({
     <div className="relative px-2 overflow-visible group">
       <Component
         href={href as string}
+        disabled={disabled}
         onClick={() => {
           if (hasSubmenu) {
             handleClick();
@@ -87,23 +90,20 @@ const NavItem = ({
           }
         }}
         type={!href ? "button" : undefined}
-        className={`flex items-center py-2 px-3 rounded-md w-full transition-colors ${
-          isActive
-            ? "bg-sidebar-accent text-sidebar-foreground"
-            : "text-sidebar-foreground hover:bg-sidebar-accent"
-        }${className} cursor-pointer`}
+        className={`flex items-center py-2 px-3 rounded-md w-full transition-colors ${isActive
+          ? "bg-sidebar-accent text-sidebar-foreground"
+          : "text-sidebar-foreground hover:bg-sidebar-accent"
+          }${className} cursor-pointer`}
       >
         <div
-          className={`flex gap-4 items-center w-full ${
-            isExpanded ? "justify-start" : "justify-center"
-          }`}
+          className={`flex gap-4 items-center w-full ${isExpanded ? "justify-start" : "justify-center"
+            }`}
         >
           <span
-            className={`${
-              label === "Logout"
-                ? "text-destructive"
-                : "text-sidebar-foreground"
-            }`}
+            className={`${label === "Logout"
+              ? "text-destructive"
+              : "text-sidebar-foreground"
+              }`}
           >
             {icon}
           </span>
@@ -187,29 +187,32 @@ export function Sidebar() {
     }
   }, [viewport, setExpanded]);
 
-  const { mutateAsync } = useMutation({
+  const { mutateAsync, isIdle } = useMutation({
     mutationFn: logoutUser,
     onSuccess() {
       queryClient.cancelQueries({ queryKey: ["user"] });
       router.replace("/");
-      toast.info("Logout successfully!");
       clearUser();
+      toast.info("Logout successfully!");
     },
     onError() {
       toast.error("Logout failed!");
     },
   });
 
+  if(!isIdle){
+    return <FullScreenLoader />
+  }
+
   return (
     <motion.div
       className={`
         flex flex-col h-screen border-r border-sidebar-border bg-background
-        ${
-          viewport === "mobile"
-            ? isExpanded
-              ? "absolute top-0 left-0 z-50 shadow-lg w-[240px]"
-              : "hidden"
-            : "sticky top-0 z-40"
+        ${viewport === "mobile"
+          ? isExpanded
+            ? "absolute top-0 left-0 z-50 shadow-lg w-[240px]"
+            : "hidden"
+          : "sticky top-0 z-40"
         }
       `}
       animate={{ width: isExpanded ? 240 : 72 }}
@@ -257,12 +260,12 @@ export function Sidebar() {
           href="/dashboard"
           onClick={collapseOnMobile}
         />
-        <NavItem
-          icon={<BotIcon size={20} />}
-          label="Chat"
-          href="/chat"
-          onClick={collapseOnMobile}
-        />
+        {/* <NavItem */}
+        {/*   icon={<BotIcon size={20} />} */}
+        {/*   label="Chat" */}
+        {/*   href="/chat" */}
+        {/*   onClick={collapseOnMobile} */}
+        {/* /> */}
         <NavItem
           icon={<Settings size={18} />}
           label="Settings"
@@ -321,6 +324,7 @@ export function Sidebar() {
         <NavItem
           icon={<LogOut size={18} />}
           label="Logout"
+          disabled={!isIdle}
           onClick={async () => await mutateAsync()}
         />
       </div>

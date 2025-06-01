@@ -46,7 +46,6 @@ export default function ProtectedLayout({
     data: userResponse,
     isSuccess,
     isLoading,
-    isError,
   } = useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
@@ -74,9 +73,6 @@ export default function ProtectedLayout({
     return <FullScreenLoader />;
   }
 
-  if (isError) {
-    return <ServerErrorPage />;
-  }
 
   if (!userResponse?.success) {
     const errorCode = userResponse?.error?.code;

@@ -6,8 +6,9 @@ import { CreateErrorResponse } from "../utils/ResponseHandler";
 const guardApi = async (req: Request, res: Response, next: NextFunction) => {
   let access_token: string = req.cookies?.sb_token;
   let refresh_token: string = req.cookies?.sb_refresh;
+  console.log(refresh_token)
 
-  if (!access_token || !refresh_token) {
+  if (!access_token && !refresh_token) {
     res
       .status(401)
       .json(CreateErrorResponse(ErrorCodes.NO_TOKEN, "No token provided!"));

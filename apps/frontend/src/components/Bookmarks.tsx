@@ -53,7 +53,7 @@ const BookmarkCard = ({ bookmark }: { bookmark: bookmark }) => {
         href={bookmark.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="bg-muted/50 rounded-xl p-4 hover:bg-muted transition-colors relative flex flex-col items-center justify-center gap-4"
+        className="bg-muted/50 rounded-xl p-4 hover:bg-muted transition-colors relative flex flex-col items-start justify-center gap-4"
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.95 }}
         initial={{ opacity: 0, y: 10 }}
@@ -171,7 +171,7 @@ export default function Bookmarks() {
     staleTime: 1000 * 60 * 5,
   });
 
-  const { mutateAsync, error: addError } = useMutation({
+  const { mutateAsync } = useMutation({
     mutationFn: addBookmark,
     onSuccess() {
       queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
@@ -184,7 +184,6 @@ export default function Bookmarks() {
   const {
     mutateAsync: searchFn,
     isPending: isSearchPending,
-    error: searchError,
   } = useMutation({
     mutationKey: ["bookmarks"],
     mutationFn: searchBookmark,
@@ -229,10 +228,12 @@ export default function Bookmarks() {
           description: result.error.message,
         });
       }
-    } catch {
-      toast.error(searchError?.message);
+    } catch (err: any) {
+      const error = err.response.data.error
+      const queryError = JSON.parse(error.details).query._errors[0];
+      toast.error(queryError || error.message);
     }
-  }, [searchQuery, isURL, searchType, searchFn, searchError, queryClient]);
+  }, [searchQuery, isURL, searchType, searchFn, queryClient]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") handleSearch();
@@ -252,9 +253,11 @@ export default function Bookmarks() {
       toast.success("Bookmark added successfully!");
       setSearchQuery("");
       handleSearch();
-    } catch {
+    } catch (err: any) {
+      const error = err.response.data.error
+      const queryError = JSON.parse(error.details).query._errors[0];
       toast.error("Failed to add bookmark. Please try again.", {
-        description: addError?.message,
+        description: queryError || error.message,
       });
     }
   }
@@ -306,18 +309,6 @@ export default function Bookmarks() {
             autoComplete="off"
             autoFocus
           />
-
-          {/* Clear button inside input */}
-          {searchQuery && (
-            <button
-              type="button"
-              onClick={() => setSearchQuery("")}
-              className="absolute right-4 top-1/2 -translate-y-1/2 rounded-full p-1 hover:bg-accent focus:outline-none"
-              aria-label="Clear search"
-            >
-              <X className="h-4 w-4 opacity-70" />
-            </button>
-          )}
         </div>
 
         {/* Search button */}
