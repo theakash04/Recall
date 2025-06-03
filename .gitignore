@@ -15,8 +15,6 @@ node_modules
 # Testing
 coverage
 
-# Turbo
-.turbo
 
 # Vercel
 .vercel
@@ -37,3 +35,4 @@ yarn-error.log*
 .DS_Store
 *.pem
 packages/database/drizzle/meta/*
+/extension/*

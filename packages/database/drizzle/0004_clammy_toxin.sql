@@ -1,1 +1,0 @@
-ALTER TABLE "global_jobs_bookmarks" RENAME COLUMN "isFailed" TO "is_failed";
