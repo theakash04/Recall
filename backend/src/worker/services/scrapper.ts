@@ -13,6 +13,15 @@ type scrapperParams = JobBookmarks & {
   url: string;
 };
 
+function cleanTextContent(rawText: string): string {
+  return rawText
+    .replace(/\r/g, "") // Remove carriage returns
+    .replace(/\t/g, " ") // Replace tabs with single spaces
+    .replace(/\s{2,}/g, " ") // Collapse multiple spaces into one
+    .replace(/\n{3,}/g, "\n\n") // Collapse 3+ newlines into just 2 (paragraph breaks)
+    .trim(); // Remove leading/trailing whitespace
+}
+
 async function Scrapper(params: scrapperParams) {
   const done = await isStepAlreadyDone({
     jobId: params.jobId,
@@ -38,7 +47,8 @@ async function Scrapper(params: scrapperParams) {
       throw new Error("No title or text content found!");
     }
 
-    const contentHash = await hashTextContent(textContent);
+    const cleanContent = cleanTextContent(textContent);
+    const contentHash = await hashTextContent(cleanContent);
 
     const existingContent = await db
       .select({ id: bookmarkContent.id })
@@ -55,7 +65,7 @@ async function Scrapper(params: scrapperParams) {
       const inserted = await db
         .insert(bookmarkContent)
         .values({
-          content: textContent,
+          content: cleanContent,
           contentHash,
         })
         .returning({ insertedId: bookmarkContent.id });

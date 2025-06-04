@@ -6,7 +6,7 @@ export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isPublicRoute = publicRoutes.includes(pathname);
   const token =
-    req.cookies.get("sb_token")?.value || req.cookies.get("sb_refresh");
+    req.cookies.get("sb_token")?.value || req.cookies.get("sb_refresh")?.value;
 
   if (!isPublicRoute && !token) {
     return NextResponse.redirect(new URL("/signin", req.url));

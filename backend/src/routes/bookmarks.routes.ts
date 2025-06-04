@@ -115,6 +115,7 @@ router.post("/add-bookmark", async (req: Request, res: Response) => {
     if (!newGlobalBookmark) {
       throw new Error("Failed to create global bookmark");
     }
+
     const [newUserBookmark] = await db
       .insert(schema.usersBookmarks)
       .values({
@@ -154,6 +155,7 @@ router.post("/add-bookmark", async (req: Request, res: Response) => {
         )
       );
   } catch (err) {
+    console.log(err);
     res
       .status(500)
       .json(

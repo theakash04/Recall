@@ -1,6 +1,8 @@
 import { relations, SQL, sql, Table } from "drizzle-orm";
 import { boolean } from "drizzle-orm/pg-core";
 import { PgColumn } from "drizzle-orm/pg-core";
+import { check } from "drizzle-orm/pg-core";
+import { numeric } from "drizzle-orm/pg-core";
 import {
   customType,
   index,
@@ -12,7 +14,6 @@ import {
   varchar,
   vector,
 } from "drizzle-orm/pg-core";
-import { authUsers } from "drizzle-orm/supabase";
 
 export const jobStatusEnum = pgEnum("status", [
   "pending",
@@ -21,12 +22,28 @@ export const jobStatusEnum = pgEnum("status", [
   "embedded",
   "completed",
 ]);
+import { authUsers } from "drizzle-orm/supabase";
 
 const tsVector = customType<{ data: string }>({
   dataType() {
     return "tsvector";
   },
 });
+
+export const userFeedback = pgTable(
+  "user_feedback",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => authUsers.id as unknown as PgColumn<any>),
+    rating: numeric("rating").notNull(),
+    feedback: text("feedback"),
+  },
+  (table) => [
+    check("rating_check", sql`${table.rating} >= 1 AND ${table.rating} <=5`),
+  ]
+);
 
 export const usersBookmarks = pgTable(
   "users_bookmarks",
@@ -45,12 +62,10 @@ export const usersBookmarks = pgTable(
       .notNull()
       .defaultNow(),
   },
-  (table) => ({
-    userIdIdx: index("user_id_idx").on(table.userId),
-    globalBookmarkIdIdx: index("global_bookmark_id_idx").on(
-      table.globalBookmarkId
-    ),
-  })
+  (table) => [
+    index("user_id_idx").on(table.userId),
+    index("global_bookmark_id_idx").on(table.globalBookmarkId),
+  ]
 );
 
 export const globalJobsBookmarks = pgTable("global_jobs_bookmarks", {
@@ -99,15 +114,10 @@ export const splitContent = pgTable(
       .notNull()
       .unique(),
   },
-  (table) => ({
-    bookmarkContentIdIdx: index("bookmark_content_id_idx").on(
-      table.bookmarkContentId
-    ),
-    contentSearchIdx: index("idx_content_search").using(
-      "gin",
-      table.contentSearch
-    ),
-  })
+  (table) => [
+    index("bookmark_content_id_idx").on(table.bookmarkContentId),
+    index("idx_content_search").using("gin", table.contentSearch),
+  ]
 );
 
 export const vectorEmbedding = pgTable(
@@ -120,10 +130,10 @@ export const vectorEmbedding = pgTable(
     embedding: vector("embedding", { dimensions: 768 }),
   },
   (table) => [
-    index("l2_index").using("ivfflat", table.embedding.op("vector_l2_ops")),
+    // index("l2_index").using("ivfflat", table.embedding.op("vector_l2_ops")),
     index("split_content_id_idx").on(table.splitContentId),
-    index("cosine_index").using(
-      "ivfflat",
+    index("hnsw_cosine_index").using(
+      "hnsw",
       table.embedding.op("vector_cosine_ops")
     ),
   ]
@@ -138,6 +148,13 @@ export const userBookmarksRelations = relations(usersBookmarks, ({ one }) => ({
   globalBookmarks: one(globalBookmarks, {
     fields: [usersBookmarks.globalBookmarkId],
     references: [globalBookmarks.id],
+  }),
+}));
+
+export const userFeedbackRelations = relations(userFeedback, ({ one }) => ({
+  user: one(authUsers as unknown as Table<any>, {
+    fields: [userFeedback.userId],
+    references: [authUsers.id as unknown as PgColumn<any>],
   }),
 }));
 

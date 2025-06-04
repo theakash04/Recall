@@ -82,16 +82,18 @@ async function keyword_search(
   LIMIT ${match_count}
 `);
 
-  return Array.from(result).map((row) => ({
-    bookmarkId: row.bookmarkId as string,
-    url: row.url as string,
-    title: row.title as string,
-    jobStatus: row.jobStatus as JobStatusType,
-    isFailed: row.isFailed as boolean,
-    error: row.error as string,
-    rank: row.rank as number,
-    createdAt: row.createdAt as Date,
-  }));
+  return Array.from(result)
+    .map((row) => ({
+      bookmarkId: row.bookmarkId as string,
+      url: row.url as string,
+      title: row.title as string,
+      jobStatus: row.jobStatus as JobStatusType,
+      isFailed: row.isFailed as boolean,
+      error: row.error as string,
+      rank: row.rank as number,
+      createdAt: row.createdAt as Date,
+    }))
+    .sort((a, b) => b.rank - a.rank);
 }
 
 /**
@@ -125,16 +127,18 @@ ORDER BY ub.id, similarity DESC
 LIMIT ${match_count}
   `);
 
-  return Array.from(result).map((row) => ({
-    bookmarkId: row.bookmarkId as string,
-    url: row.url as string,
-    title: row.title as string,
-    jobStatus: row.jobStatus as JobStatusType,
-    isFailed: row.isFailed as boolean,
-    error: row.error as string,
-    similarity: row.similarity as number,
-    createdAt: row.createdAt as Date,
-  }));
+  return Array.from(result)
+    .map((row) => ({
+      bookmarkId: row.bookmarkId as string,
+      url: row.url as string,
+      title: row.title as string,
+      jobStatus: row.jobStatus as JobStatusType,
+      isFailed: row.isFailed as boolean,
+      error: row.error as string,
+      similarity: row.similarity as number,
+      createdAt: row.createdAt as Date,
+    }))
+    .sort((a, b) => b.similarity - a.similarity);
 }
 
 /**

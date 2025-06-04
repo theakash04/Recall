@@ -1,4 +1,13 @@
+import { useGlobalStore } from "@/store/globalStore";
+
 export default function ServerErrorPage() {
+  const { setServerError } = useGlobalStore();
+
+  async function handleRetry() {
+    setServerError(false);
+    window.location.reload();
+  }
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="max-w-md w-full text-center space-y-8">
@@ -45,7 +54,7 @@ export default function ServerErrorPage() {
         {/* Action Button */}
         <div className="pt-4">
           <button
-            onClick={() => window.location.reload()}
+            onClick={handleRetry}
             className="px-6 py-3 bg-foreground text-background rounded-lg hover:bg-foreground/90 transition-colors duration-200 font-medium cursor-pointer"
           >
             Try Again

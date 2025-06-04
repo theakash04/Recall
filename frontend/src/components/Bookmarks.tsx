@@ -1,12 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Separator } from "./ui/separator";
 import { AnimatePresence, motion } from "framer-motion";
 import { toast } from "sonner";
-import { bookmark } from "@/types/bookmarkTypes";
+import { bookmark, searchParams, searchType } from "@/types/bookmarkTypes";
 import clsx from "clsx";
 import { ChevronDown, CircleAlert, RefreshCw, X } from "lucide-react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -17,6 +17,8 @@ import {
   searchBookmark,
 } from "@/lib/bookmarksApi";
 import { ApiResponse } from "@/types/apiResponse";
+import { ErrorCodes } from "@/types/constant";
+import { useGlobalStore } from "@/store/globalStore";
 
 const URL_REGEX = /^(https:\/\/)?([\w-]+\.)+[\w-]+(\/[\w-./?%&=]*)?$/i;
 
@@ -153,49 +155,51 @@ const BookmarkCard = ({ bookmark }: { bookmark: bookmark }) => {
 
 export default function Bookmarks() {
   const queryClient = useQueryClient();
+  const { setServerError, globalSetting } = useGlobalStore();
   const [searchQuery, setSearchQuery] = useState("");
+  const [searchTerm, setSearchTerm] = useState<searchParams | null>(null);
   const [isUrlNotFound, setIsUrlNotFound] = useState<string | null>(null);
-  const [searchResults, setSearchResults] = useState<bookmark[]>([]);
-  const [searchType, setSearchType] = useState<string>("keyword");
-  const [HasSearch, setHasSearch] = useState<boolean>(false);
+  const [searchType, setSearchType] = useState<searchType>(
+    globalSetting.default_search_type
+  );
+  const searchBarRef = useRef<HTMLInputElement>(null);
 
   const isURL = useCallback((str: string) => URL_REGEX.test(str), []);
 
   const {
-    data: bookmarksResponse = [],
-    isLoading,
+    data: bookmarksResponse,
+    isLoading: isBookmarkLoading,
     refetch,
   } = useQuery<ApiResponse<bookmark[]>>({
     queryKey: ["bookmarks"],
     queryFn: fetchBookmarks,
-    staleTime: 1000 * 60 * 5,
+  });
+
+  const {
+    data: searchResults,
+    isLoading: isSearchLoading,
+    isError: isSearchError,
+  } = useQuery<ApiResponse<bookmark[]>>({
+    queryKey: ["search_results", searchTerm],
+    queryFn: () => searchBookmark(searchTerm!),
+    enabled: !!searchTerm,
+    retry: false,
   });
 
   const { mutateAsync } = useMutation({
     mutationFn: addBookmark,
     onSuccess() {
       queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
-      setTimeout(() => {
-        queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
-      }, 15000);
     },
-  });
-
-  const {
-    mutateAsync: searchFn,
-    isPending: isSearchPending,
-  } = useMutation({
-    mutationKey: ["bookmarks"],
-    mutationFn: searchBookmark,
   });
 
   const handleSearch = useCallback(async () => {
     const query = searchQuery.trim();
 
     if (!query) {
-      setSearchResults([]);
-      setHasSearch(false);
       setIsUrlNotFound(null);
+      setSearchTerm(null);
+      toast.warning("Please type something to search for");
       return;
     }
 
@@ -203,41 +207,43 @@ export default function Bookmarks() {
     const normalizedQuery = isUrlSearch
       ? normalizeUrl(query)
       : query.toLowerCase();
-    const effectiveSearchType = isUrlSearch ? "url" : searchType;
-    const searchKey = { query: normalizedQuery };
-
-    try {
-      const result = await searchFn({
-        ...searchKey,
-        search_type: effectiveSearchType,
-      });
-
-      if ("data" in result) {
-        const data = result.data;
-
-        setSearchResults(data);
-        setHasSearch(true);
-        if (data.length === 0) {
-          toast.info("No result found!");
-          if (isUrlSearch) setIsUrlNotFound(normalizedQuery);
-        } else {
-          setIsUrlNotFound(null);
-        }
-      } else {
-        toast.error(result.error.code, {
-          description: result.error.message,
-        });
-      }
-    } catch (err: any) {
-      const error = err.response.data.error
-      const queryError = JSON.parse(error.details).query._errors[0];
-      toast.error(queryError || error.message);
+    if (isUrlSearch) {
+      setIsUrlNotFound(normalizedQuery);
     }
-  }, [searchQuery, isURL, searchType, searchFn, queryClient]);
+    const effectiveSearchType = isUrlSearch ? "url" : searchType;
+    const searchKey = {
+      query: normalizedQuery,
+      search_type: effectiveSearchType,
+    };
+    queryClient.invalidateQueries({ queryKey: ["search_results"] });
+    setSearchTerm(searchKey);
+  }, [searchQuery, isURL, searchType, queryClient]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") handleSearch();
   };
+
+  const handleSearchKeyDown = (e: KeyboardEvent) => {
+    const isMac = navigator.userAgent.toLowerCase().includes("mac");
+
+    const isCtrlK = !isMac && e.ctrlKey && e.key.toLowerCase() === "k";
+    const isCmdK = isMac && e.metaKey && e.key.toLowerCase() === "k";
+
+    if (isCtrlK || isCmdK) {
+      e.preventDefault();
+
+      if (searchBarRef.current) {
+        searchBarRef.current.focus();
+      }
+    }
+  };
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleSearchKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleSearchKeyDown);
+    };
+  }, []);
 
   async function handleAddBookmark() {
     const url = searchQuery.trim();
@@ -248,31 +254,55 @@ export default function Bookmarks() {
     }
 
     const normalizedUrl = normalizeUrl(url);
+    const toastId = toast.loading("Adding Bookmark");
     try {
       await mutateAsync({ url: normalizedUrl });
-      toast.success("Bookmark added successfully!");
+      if (!bookmarksResponse?.success) {
+        if (
+          bookmarksResponse?.error.code === ErrorCodes.VALIDATION_ERROR ||
+          bookmarksResponse?.error.code === ErrorCodes.URL_NOT_SCRAPABLE
+        ) {
+          throw new Error(bookmarksResponse.error.message);
+        }
+      }
+      toast.success("Bookmark added successfully!", { id: toastId });
       setSearchQuery("");
       handleSearch();
     } catch (err: any) {
-      const error = err.response.data.error
-      const queryError = JSON.parse(error.details).query._errors[0];
-      toast.error("Failed to add bookmark. Please try again.", {
+      const error = err.response.data.error;
+      let queryError;
+      if (error.details) {
+        queryError = JSON.parse(error.details).query._errors[0];
+      }
+      toast.error("Failed to add bookmark.", {
         description: queryError || error.message,
+        id: toastId,
       });
+
+      if (error.response.data.code === ErrorCodes.SERVER_ERROR) {
+        setServerError(true);
+      }
     }
   }
 
   useEffect(() => {
-    setHasSearch(false);
-  }, [searchQuery]);
+    if (searchQuery.trim() === "" && searchTerm) {
+      setSearchTerm(null);
+    }
+  }, [searchQuery, searchTerm]);
 
-  const isLoadingState = isSearchPending || isLoading;
-  const resultsToDisplay = HasSearch
-    ? searchResults
-    : searchQuery.trim() === ""
-      ? bookmarksResponse && "data" in bookmarksResponse
-        ? bookmarksResponse.data
-        : []
+  async function refreshBookmarks() {
+    await refetch();
+    setSearchQuery("");
+    setSearchTerm(null);
+    setIsUrlNotFound(null);
+  }
+
+  const resultsToDisplay =
+    searchResults?.success && !searchTerm !== null
+      ? searchResults.data
+      : bookmarksResponse?.success
+      ? bookmarksResponse.data
       : [];
 
   return (
@@ -282,9 +312,14 @@ export default function Bookmarks() {
         <div className="relative md:w-max w-full">
           <select
             value={searchType}
-            onChange={(e) => setSearchType(e.target.value)}
-            className="appearance-none h-14 pl-4 pr-10 py-2 text-sm rounded-md border border-input bg-background cursor-pointer focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 w-full"
+            onChange={(e) => setSearchType(e.target.value as searchType)}
+            className={clsx(
+              "appearance-none h-14 pl-4 pr-10 py-2 text-sm rounded-md border border-input bg-background  focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 w-full",
+              isSearchLoading ? "cursor-not-allowed" : "cursor-pointer"
+            )}
             aria-label="Select search type"
+            aria-disabled={isSearchLoading}
+            disabled={isSearchLoading}
           >
             <option value="keyword">Keyword</option>
             <option value="semantic">Semantic</option>
@@ -302,23 +337,40 @@ export default function Bookmarks() {
             type="search"
             aria-label="Search bookmarks"
             placeholder="Search bookmarks..."
-            className="py-6 w-full text-base pl-4 pr-12"
+            className={clsx(
+              "py-6 w-full text-base pl-4 pr-12",
+              isSearchLoading ? "cursor-not-allowed" : "cursor-pointer"
+            )}
             value={searchQuery}
+            ref={searchBarRef}
             onChange={(e) => setSearchQuery(e.target.value)}
             onKeyDown={handleKeyDown}
+            aria-invalid={isSearchError}
             autoComplete="off"
             autoFocus
+            disabled={isSearchLoading}
           />
+          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-muted-foreground pointer-events-none border-1 rounded-md p-2 bg-foreground/10">
+            {navigator.userAgent.toLowerCase().includes("mac")
+              ? "⌘K"
+              : "Ctrl+K"}
+          </span>
         </div>
 
         {/* Search button */}
         <Button
           onClick={handleSearch}
           type="button"
-          className="py-6 px-10 cursor-pointer md:w-max w-full"
+          className={clsx(
+            "py-6 px-10 md:w-max w-full",
+            searchTerm ? "cursor-not-allowed" : "cursor-pointer"
+          )}
           aria-label="search bookmarks button"
+          aria-busy={isSearchLoading}
+          aria-disabled={isSearchLoading}
+          disabled={isSearchLoading || !searchQuery.trim()}
         >
-          Search
+          {isSearchLoading ? "Searching..." : "Search"}
         </Button>
       </div>
 
@@ -328,17 +380,17 @@ export default function Bookmarks() {
           size={"lg"}
           variant={"outline"}
           className="flex items-center justify-center cursor-pointer"
-          disabled={isLoading}
-          onClick={() => refetch()}
+          disabled={isBookmarkLoading || isSearchLoading}
+          onClick={refreshBookmarks}
         >
           <RefreshCw />
           Refresh
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 overflow-y-hidden overflow-x-hidden md:px-6 px-0">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 overflow-y-hidden overflow-x-hidden md:px-6 px-0 pt-4">
         <AnimatePresence mode="popLayout">
-          {isLoadingState ? (
+          {isSearchLoading || isBookmarkLoading ? (
             <motion.div
               key="loader"
               initial={{ opacity: 0, y: 10 }}
@@ -370,7 +422,7 @@ export default function Bookmarks() {
                 ></path>
               </svg>
               <span className="text-sm">
-                {isSearchPending
+                {isSearchLoading
                   ? "Searching bookmarks..."
                   : "Loading bookmarks..."}
               </span>
@@ -393,7 +445,11 @@ export default function Bookmarks() {
               <p>
                 No bookmark found for: <strong>{isUrlNotFound}</strong>
               </p>
-              <Button variant="secondary" onClick={handleAddBookmark}>
+              <Button
+                variant="secondary"
+                onClick={handleAddBookmark}
+                className="cursor-pointer"
+              >
                 Add this Bookmark
               </Button>
             </motion.div>
@@ -405,10 +461,9 @@ export default function Bookmarks() {
               exit={{ opacity: 0 }}
               className="text-center text-muted-foreground col-span-full"
             >
-              {searchQuery.trim() && !HasSearch
-                ? null
-                : "Empty for now. Try a search or add one."}
-              Empty for now. Try a search or add one.
+              {searchTerm
+                ? `No bookmarks match your search for "${searchTerm.query}". Try adjusting your search terms or search type.`
+                : "Start building your bookmark collection by adding URLs you want to save and search through later."}
             </motion.div>
           )}
         </AnimatePresence>

@@ -23,6 +23,7 @@ import { fetchUser } from "@/lib/userApi";
 import ServerErrorPage from "./serverError";
 import { toast } from "sonner";
 import { ErrorCodes } from "@/types/constant";
+import { useGlobalStore } from "@/store/globalStore";
 
 export default function ProtectedLayout({
   children,
@@ -33,6 +34,7 @@ export default function ProtectedLayout({
   const pathSegments = pathname.split("/").filter((seg) => seg);
   const { setUser } = useUserStore();
   const { toggleSidebar } = useSidebarStore();
+  const { isServerError } = useGlobalStore();
   const router = useRouter();
 
   let fullPath = "";
@@ -51,52 +53,45 @@ export default function ProtectedLayout({
     queryKey: ["user"],
     queryFn: fetchUser,
     staleTime: 1000 * 60 * 5,
-    retry: false,
   });
 
-  useEffect(() => {
+  async function checkAuth() {
     if (!isSuccess) return;
 
     if (userResponse.success) {
       setUser(userResponse.data);
     } else {
-      const errorMessage = userResponse?.error?.code || "Authentication failed";
-      const errorDescription =
-        userResponse?.error?.message || "Please try again";
+      const errorCode = userResponse?.error?.code;
+      if (
+        errorCode === ErrorCodes.NOT_AUTHENTICATED ||
+        errorCode === ErrorCodes.AUTH_FAILED
+      ) {
+        router.replace("/signin");
+      }
 
-      toast.error(errorMessage, {
-        description: errorDescription,
+      toast.warning(userResponse?.error.code, {
+        description: userResponse?.error.message,
       });
+      router.replace("/signin");
     }
-  }, [isSuccess, userResponse, setUser]);
+  }
+
+  // when these changes than do this
+  useEffect(() => {
+    checkAuth();
+  }, [isSuccess, userResponse, setUser, isServerError]);
+
+  // on mount do this
+  useEffect(() => {
+    checkAuth();
+  }, []);
 
   if (isLoading) {
     return <FullScreenLoader />;
   }
 
-  if (isError) {
+  if (isError || isServerError) {
     return <ServerErrorPage />;
-  }
-
-  if (!userResponse?.success) {
-    console.log("something");
-    const errorCode = userResponse?.error?.code;
-    if (
-      errorCode === ErrorCodes.NOT_AUTHENTICATED ||
-      errorCode === ErrorCodes.AUTH_FAILED
-    ) {
-      router.replace("/signin");
-      return null;
-    }
-    if (errorCode === ErrorCodes.SERVER_ERROR) {
-      return <ServerErrorPage />;
-    }
-
-    toast.warning(userResponse?.error.code, {
-      description: userResponse?.error.message,
-    });
-    router.replace("/signin");
-    return null;
   }
 
   return (

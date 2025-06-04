@@ -1,5 +1,5 @@
 import { ApiResponse } from "@/types/apiResponse";
-import { bookmark, newBookmark } from "@/types/bookmarkTypes";
+import { bookmark, newBookmark, searchParams } from "@/types/bookmarkTypes";
 import axios from "axios";
 
 export async function fetchBookmarks(): Promise<ApiResponse<bookmark[]>> {
@@ -24,11 +24,6 @@ export async function addBookmark(
 
   return response.data;
 }
-
-type searchParams = {
-  query: string;
-  search_type: string;
-};
 
 export async function searchBookmark(
   params: searchParams
