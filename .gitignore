@@ -34,5 +34,5 @@ yarn-error.log*
 # Misc
 .DS_Store
 *.pem
-packages/database/drizzle/meta/*
+backend/drizzle/meta/*
 /extension/*

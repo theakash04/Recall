@@ -2,6 +2,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { addUserFeedback } from "@/lib/userApi";
+import { toast } from "sonner";
 
 export default function FeedbackPage() {
   const [rating, setRating] = useState(0);
@@ -9,22 +11,26 @@ export default function FeedbackPage() {
   const [isSubmitted, setIsSubmitted] = useState(false);
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const toastId = toast.loading("Sending feedback!");
+    try {
+      const res = await addUserFeedback({ rating, feedback });
+      setIsSubmitted(true);
+      toast.success("Feedback sent!", {
+        id: toastId,
+      });
 
-    // Log the feedback data
-    console.log({
-      rating,
-      feedback,
-      timestamp: new Date().toISOString(),
-    });
-
-    setIsSubmitted(true);
-
-    // Redirect to home after 2 seconds
-    setTimeout(() => {
-      router.push("/");
-    }, 1000);
+      // Redirect to home after 2 seconds
+      setTimeout(() => {
+        router.push("/");
+      }, 2000);
+    } catch (err) {
+      toast.error("Failed to send feedback!", {
+        description: err instanceof Error ? err.message : undefined,
+        id: toastId,
+      });
+    }
   };
 
   if (isSubmitted) {
@@ -90,26 +96,65 @@ export default function FeedbackPage() {
             {/* Feedback Text */}
             <div>
               <label
-              htmlFor="feedback"
-              className="block text-sm font-medium text-foreground mb-3"
+                htmlFor="feedback"
+                className="block text-sm font-medium text-foreground mb-3"
               >
-              Additional Comments (Optional)
+                Additional Comments (Optional)
               </label>
               <textarea
-              id="feedback"
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              rows={6}
-              className="w-full px-4 py-3 border border-border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/60 focus:border-transparent resize-none"
-              placeholder="Share your thoughts and suggestions..."
+                id="feedback"
+                value={feedback}
+                onChange={(e) => setFeedback(e.target.value)}
+                rows={6}
+                className={`w-full px-4 py-3 border rounded-lg bg-background text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:border-transparent resize-none ${
+                  feedback.length > 500 ||
+                  (feedback.length > 0 && feedback.length < 12)
+                    ? "border-destructive focus:ring-destructive/60"
+                    : "border-border focus:ring-primary/60"
+                }`}
+                placeholder="Share your thoughts and suggestions..."
               />
+              <div className="flex justify-between items-center mt-2">
+                <div className="text-xs">
+                  {feedback.length > 0 && feedback.length < 12 && (
+                    <span className="text-destructive">
+                      Minimum 12 characters required
+                    </span>
+                  )}
+                  {feedback.length > 500 && (
+                    <span className="text-destructive">
+                      Maximum 500 characters allowed
+                    </span>
+                  )}
+                </div>
+                <span
+                  className={`text-xs ${
+                    feedback.length > 500
+                      ? "text-destructive"
+                      : feedback.length > 450
+                      ? "text-yellow-500"
+                      : "text-muted-foreground"
+                  }`}
+                >
+                  {feedback.length}/500
+                </span>
+              </div>
             </div>
 
             {/* Submit Button */}
             <div className="flex items-center justify-center sm:flex-row flex-col gap-4">
               <Button
                 type="submit"
-                disabled={rating === 0}
+                disabled={
+                  rating === 0 ||
+                  (feedback.length > 0 &&
+                    (feedback.length < 12 || feedback.length > 500))
+                }
+                aria-disabled={
+                  rating === 0 ||
+                  (feedback.length > 0 &&
+                    (feedback.length < 12 || feedback.length > 500))
+                }
                 size={"lg"}
                 variant={"default"}
                 className="cursor-pointer sm:flex-2 "

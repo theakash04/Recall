@@ -1,0 +1,1 @@
+ALTER TABLE "user_feedback" ADD COLUMN "created_at" timestamp with time zone DEFAULT now() NOT NULL;

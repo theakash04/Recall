@@ -2,6 +2,7 @@ import { NextFunction, Request, Response } from "express";
 import supabase from "../supabase/supabaseClient";
 import { CreateErrorResponse } from "../utils/ResponseHandler";
 import { ErrorCodes } from "../types/constant";
+import { clearAuthCookies, setAuthCookies } from "../utils/cookieHandler";
 
 const guardApi = async (req: Request, res: Response, next: NextFunction) => {
   let access_token: string = req.cookies?.sb_token;
@@ -22,6 +23,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
       });
 
     if (refreshError || !refreshData.session) {
+      clearAuthCookies(res);
       res
         .status(401)
         .json(
@@ -30,41 +32,25 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
             "Unable to refresh token",
             refreshError?.message
           )
-        )
-        .clearCookie("sb_refresh", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-          sameSite: "lax",
-        });
+        );
       return;
     }
 
     access_token = refreshData.session.access_token;
     refresh_token = refreshData.session.refresh_token;
 
-    res.cookie("sb_token", access_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: refreshData.session.expires_in
-        ? refreshData.session.expires_in * 1000
-        : 15 * 60 * 1000,
-    });
-
-    res.cookie("sb_refresh", refresh_token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
+    setAuthCookies(
+      res,
+      access_token,
+      refresh_token,
+      refreshData.session.expires_in
+    );
   }
 
   let { data: userData, error } = await supabase.auth.getUser(access_token);
   if (error) {
     if (!refresh_token) {
+      clearAuthCookies(res);
       res
         .status(401)
         .json(
@@ -73,13 +59,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
             "Invalid access token",
             error?.message
           )
-        )
-        .clearCookie("sb_token", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-          sameSite: "lax",
-        });
+        );
       return;
     }
 
@@ -89,6 +69,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
         access_token,
       });
     if (refreshError || !refreshData.session) {
+      clearAuthCookies(res);
       res
         .status(401)
         .json(
@@ -97,48 +78,24 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
             "Unable to refresh token",
             refreshError?.message
           )
-        )
-        .clearCookie("sb_token", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-          sameSite: "lax",
-        })
-        .clearCookie("sb_refresh", {
-          httpOnly: true,
-          secure: process.env.NODE_ENV === "production",
-          path: "/",
-          sameSite: "lax",
-        });
+        );
       return;
     }
 
-    const newAccessToken = refreshData.session?.access_token;
-    const newRefreshToken = refreshData.session?.refresh_token;
-    const expiresIn = refreshData.session?.expires_in;
+    access_token = refreshData.session?.access_token;
+    refresh_token = refreshData.session?.refresh_token;
 
-    res.cookie("sb_token", newAccessToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: expiresIn ? expiresIn * 1000 : 15 * 60 * 1000,
-    });
-
-    res.cookie("sb_refresh", newRefreshToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-    });
-
-    access_token = newAccessToken;
-    refresh_token = newRefreshToken;
+    setAuthCookies(
+      res,
+      access_token,
+      refresh_token,
+      refreshData.session.expires_in
+    );
 
     const result = await supabase.auth.getUser(access_token);
 
     if (result.error || !result.data.user) {
+      clearAuthCookies(res);
       res
         .status(401)
         .json(
@@ -151,6 +108,7 @@ const guardApi = async (req: Request, res: Response, next: NextFunction) => {
   }
 
   if (!userData?.user?.user_metadata) {
+    clearAuthCookies(res);
     res
       .status(401)
       .json(

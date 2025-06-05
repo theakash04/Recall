@@ -33,3 +33,25 @@ export async function deleteUserAccount(): Promise<ApiResponse<undefined>> {
 
   return res.data;
 }
+
+type userFeedbackParams = {
+  rating: number;
+  feedback?: string;
+};
+
+export async function addUserFeedback(
+  params: userFeedbackParams
+): Promise<ApiResponse<undefined>> {
+  const res = await axios.post<ApiResponse<undefined>>(
+    `${process.env.NEXT_PUBLIC_SERVER_API}/auth/add-feedback`,
+    {
+      rating: params.rating,
+      feedback: params.feedback,
+    },
+    {
+      withCredentials: true,
+    }
+  );
+
+  return res.data;
+}

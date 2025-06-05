@@ -22,7 +22,6 @@ import { useQuery } from "@tanstack/react-query";
 import { fetchUser } from "@/lib/userApi";
 import ServerErrorPage from "./serverError";
 import { toast } from "sonner";
-import { ErrorCodes } from "@/types/constant";
 import { useGlobalStore } from "@/store/globalStore";
 
 export default function ProtectedLayout({
@@ -37,8 +36,6 @@ export default function ProtectedLayout({
   const { isServerError } = useGlobalStore();
   const router = useRouter();
 
-  let fullPath = "";
-
   useEffect(() => {
     nProgress.start();
     nProgress.done();
@@ -49,106 +46,105 @@ export default function ProtectedLayout({
     isSuccess,
     isLoading,
     isError,
+    error,
   } = useQuery({
     queryKey: ["user"],
     queryFn: fetchUser,
     staleTime: 1000 * 60 * 5,
+    retry: false,
   });
 
-  async function checkAuth() {
-    if (!isSuccess) return;
-
-    if (userResponse.success) {
-      setUser(userResponse.data);
-    } else {
-      const errorCode = userResponse?.error?.code;
-      if (
-        errorCode === ErrorCodes.NOT_AUTHENTICATED ||
-        errorCode === ErrorCodes.AUTH_FAILED
-      ) {
+  useEffect(() => {
+    if (isError && error) {
+      const errorRes = !userResponse?.success && userResponse?.error;
+      if (errorRes) {
+        toast.warning(errorRes?.code, {
+          description: errorRes.message,
+        });
+      }
+      if ((error as any)?.status >= 400 && (error as any)?.status < 500) {
         router.replace("/signin");
       }
-
-      toast.warning(userResponse?.error.code, {
-        description: userResponse?.error.message,
-      });
-      router.replace("/signin");
     }
-  }
 
-  // when these changes than do this
-  useEffect(() => {
-    checkAuth();
-  }, [isSuccess, userResponse, setUser, isServerError]);
-
-  // on mount do this
-  useEffect(() => {
-    checkAuth();
-  }, []);
+    if (isSuccess && userResponse.success) {
+      setUser(userResponse.data);
+    }
+  }, [isError, error, router, isSuccess]);
 
   if (isLoading) {
     return <FullScreenLoader />;
   }
 
-  if (isError || isServerError) {
+  if (isServerError) {
     return <ServerErrorPage />;
   }
 
-  return (
-    <div className="flex min-h-screen relative overflow-auto scrollbar">
-      <Sidebar />
-      <div className="flex flex-col max-w-[100rem] mx-auto w-full">
-        <main className="">
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 bg-background">
-            <div className="flex items-center gap-2 px-4">
-              <Button onClick={() => toggleSidebar()} variant={"ghost"}>
-                <PanelRight />
-              </Button>
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-[orientation=vertical]:h-4"
-              />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  {pathSegments.length > 0 && (
-                    <>
-                      <BreadcrumbSeparator />
-                      {pathSegments.map((segment, index) => {
-                        fullPath += `/${segment}`;
-                        const isLast = index === pathSegments.length - 1;
+  if (!isSuccess && !userResponse?.success && isError) {
+    return <FullScreenLoader />;
+  }
 
-                        return (
-                          <Fragment key={index}>
-                            <BreadcrumbItem>
-                              {isLast ? (
-                                <BreadcrumbPage>
-                                  {formatSegment(segment)}
-                                </BreadcrumbPage>
-                              ) : (
-                                <BreadcrumbLink href={fullPath}>
-                                  {formatSegment(segment)}
-                                </BreadcrumbLink>
-                              )}
-                            </BreadcrumbItem>
-                            {!isLast && <BreadcrumbSeparator />}
-                          </Fragment>
-                        );
-                      })}
-                    </>
-                  )}
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </header>
-          <Suspense fallback={<FullScreenLoader />}>
-            <div key={pathname} className="h-[85vh]">
-              {children}
-            </div>
-          </Suspense>
-        </main>
+  let fullPath = "";
+
+  if (isSuccess && userResponse.success) {
+    return (
+      <div className="flex min-h-screen relative overflow-auto scrollbar">
+        <Sidebar />
+        <div className="flex flex-col max-w-[100rem] mx-auto w-full">
+          <main className="">
+            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 bg-background">
+              <div className="flex items-center gap-2 px-4">
+                <Button onClick={() => toggleSidebar()} variant={"ghost"}>
+                  <PanelRight />
+                </Button>
+                <Separator
+                  orientation="vertical"
+                  className="mr-2 data-[orientation=vertical]:h-4"
+                />
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    {pathSegments.length > 0 && (
+                      <>
+                        <BreadcrumbSeparator />
+                        {pathSegments.map((segment, index) => {
+                          fullPath += `/${segment}`;
+                          const isLast = index === pathSegments.length - 1;
+
+                          return (
+                            <Fragment key={index}>
+                              <BreadcrumbItem>
+                                {isLast ? (
+                                  <BreadcrumbPage>
+                                    {formatSegment(segment)}
+                                  </BreadcrumbPage>
+                                ) : (
+                                  <BreadcrumbLink href={fullPath}>
+                                    {formatSegment(segment)}
+                                  </BreadcrumbLink>
+                                )}
+                              </BreadcrumbItem>
+                              {!isLast && <BreadcrumbSeparator />}
+                            </Fragment>
+                          );
+                        })}
+                      </>
+                    )}
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </div>
+            </header>
+            <Suspense fallback={<FullScreenLoader />}>
+              <div key={pathname} className="h-[85vh]">
+                {children}
+              </div>
+            </Suspense>
+          </main>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  return <ServerErrorPage />;
 }
 
 function formatSegment(segment: string) {

@@ -1,0 +1,1 @@
+ALTER TABLE "user_feedback" ALTER COLUMN "rating" SET DATA TYPE integer;

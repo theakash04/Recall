@@ -6,10 +6,13 @@ import {
   CreateSuccessResponse,
   CreateErrorResponse,
 } from "../utils/ResponseHandler";
-import { eq } from "drizzle-orm";
+import { asc, desc, eq, gt } from "drizzle-orm";
 import { ErrorCodes } from "../types/constant";
 import { db } from "../database/dbConnect";
-import { usersBookmarks } from "../database/schema";
+import { userFeedback, usersBookmarks } from "../database/schema";
+import { clearAuthCookies, setAuthCookies } from "../utils/cookieHandler";
+import { userFeedbackSchema } from "../types/zod/users";
+import { feedbacks, newFeedback } from "../types/dbTypes";
 
 const router: Router = Router();
 
@@ -61,20 +64,12 @@ router.get("/callback", async (req: Request, res: Response) => {
 
   const { session } = data;
 
-  res.cookie("sb_token", session?.access_token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: session?.expires_in ? session?.expires_in * 1000 : 15 * 60 * 1000,
-  });
-  res.cookie("sb_refresh", session?.refresh_token, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
-    path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
-  });
+  setAuthCookies(
+    res,
+    session.access_token,
+    session.refresh_token,
+    session.expires_in
+  );
 
   res.redirect("http://localhost:3000/dashboard");
 });
@@ -111,19 +106,7 @@ router.get("/logout", guardApi, async (req: Request, res: Response) => {
     return;
   }
 
-  res.clearCookie("sb_token", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    sameSite: "lax",
-  });
-  res.clearCookie("sb_refresh", {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    path: "/",
-    sameSite: "lax",
-  });
-
+  clearAuthCookies(res);
   res.status(200).json(CreateSuccessResponse("Logout successfully!"));
 });
 
@@ -137,20 +120,119 @@ router.get("/delete-account", guardApi, async (req: Request, res: Response) => {
       throw new Error("Error while deleting user Account!");
     }
 
-    res.clearCookie("sb_token", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      sameSite: "lax",
-    });
-    res.clearCookie("sb_refresh", {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      path: "/",
-      sameSite: "lax",
-    });
+    clearAuthCookies(res);
 
     res.status(200).json(CreateSuccessResponse("User deleted Successfully!"));
+  } catch (err) {
+    res
+      .status(500)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.SERVER_ERROR,
+          "Something unexpected Happened!",
+          err instanceof Error ? err.message : undefined
+        )
+      );
+  }
+});
+
+// add feedback
+router.post("/add-feedback", guardApi, async (req: Request, res: Response) => {
+  const user = (req as any).user;
+
+  const result = userFeedbackSchema.safeParse(req.body);
+  if (!result.success) {
+    res
+      .status(400)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          "Request body validation failed!",
+          JSON.stringify(result.error.format())
+        )
+      );
+    return;
+  }
+
+  try {
+    const { rating, feedback } = result.data;
+    await db.insert(userFeedback).values({
+      rating: rating,
+      userId: user.id,
+      feedback: feedback,
+    });
+
+    res.status(200).json(CreateSuccessResponse("Feedback sent successfully!"));
+  } catch (err) {
+    res
+      .status(500)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.SERVER_ERROR,
+          "Something unexpected Happened!",
+          err instanceof Error ? err.message : undefined
+        )
+      );
+  }
+});
+
+// route to get feedback from the user and show it on home screen
+router.get("/get-feedbacks", async (req: Request, res: Response) => {
+  try {
+    const feedbacks = await db
+      .select({
+        id: userFeedback.id,
+        rating: userFeedback.rating,
+        feedback: userFeedback.feedback,
+        userId: userFeedback.userId,
+      })
+      .from(userFeedback)
+      .where(gt(userFeedback.rating, 4))
+      .limit(7)
+      .orderBy(desc(userFeedback.rating))
+      .then(async (feedbacks) => {
+        const uniqueFeedbacksMap = new Map();
+        feedbacks.forEach((fb) => {
+          if (!uniqueFeedbacksMap.has(fb.userId)) {
+            uniqueFeedbacksMap.set(fb.userId, fb);
+          }
+        });
+
+        const uniqueFeedbacks: feedbacks[] = Array.from(
+          uniqueFeedbacksMap.values()
+        );
+
+        // unique id's
+        const userIds = uniqueFeedbacks.map((fb) => fb.userId);
+
+        const userDetailsPromise = userIds.map((id) =>
+          supabase.auth.admin.getUserById(id)
+        );
+
+        const userDetailsResults = await Promise.all(userDetailsPromise);
+
+        // map user id with userDetails
+        const userDetailsMap = new Map();
+        userDetailsResults.forEach((result, index) => {
+          userDetailsMap.set(userIds[index], {
+            avatar_url: result.data.user?.user_metadata?.avatar_url,
+            name: result.data.user?.user_metadata?.full_name,
+          });
+        });
+
+        const feedbacksWithUserDetails = uniqueFeedbacks.map((fb) => ({
+          ...fb,
+          user: userDetailsMap.get(fb.userId) || null,
+        }));
+
+        return feedbacksWithUserDetails;
+      });
+
+    res
+      .status(200)
+      .json(
+        CreateSuccessResponse(feedbacks, "Feedbacks retrieved successfully!")
+      );
   } catch (err) {
     res
       .status(500)

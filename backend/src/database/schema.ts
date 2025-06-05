@@ -1,8 +1,8 @@
 import { relations, SQL, sql, Table } from "drizzle-orm";
 import { boolean } from "drizzle-orm/pg-core";
 import { PgColumn } from "drizzle-orm/pg-core";
+import { integer } from "drizzle-orm/pg-core";
 import { check } from "drizzle-orm/pg-core";
-import { numeric } from "drizzle-orm/pg-core";
 import {
   customType,
   index,
@@ -37,8 +37,11 @@ export const userFeedback = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => authUsers.id as unknown as PgColumn<any>),
-    rating: numeric("rating").notNull(),
+    rating: integer("rating").notNull(),
     feedback: text("feedback"),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
   },
   (table) => [
     check("rating_check", sql`${table.rating} >= 1 AND ${table.rating} <=5`),
