@@ -60,3 +60,8 @@ export const addUrlSchema = z.object({
 export const jobRetrySchema = z.object({
   bookmarkId: z.string(),
 });
+
+export const paginationSchema = z.object({
+  page: z.coerce.number().min(1).default(1),
+  limit: z.coerce.number().min(1).max(12).default(10),
+});

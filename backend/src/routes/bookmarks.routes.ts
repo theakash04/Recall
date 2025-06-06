@@ -3,6 +3,7 @@ import {
   addUrlSchema,
   getQuerySchema,
   jobRetrySchema,
+  paginationSchema,
 } from "../types/zod/bookmarks";
 import isUrlScrapable from "../utils/urlScrapableChecker";
 import { and, desc, eq, sql } from "drizzle-orm";
@@ -269,6 +270,27 @@ router.get("/get-all-bookmarks", async (req: Request, res: Response) => {
     throw new Error("user Id is undefined");
   }
 
+  const result = paginationSchema.safeParse({
+    page: req.query.page,
+    limit: req.query.limit,
+  });
+
+  if (!result.success) {
+    res
+      .status(400)
+      .json(
+        CreateErrorResponse(
+          ErrorCodes.VALIDATION_ERROR,
+          "Invalid pagination Params",
+          JSON.stringify(result.error.format())
+        )
+      );
+    return;
+  }
+
+  const { page, limit } = result.data;
+  const offset = (page - 1) * limit;
+
   try {
     const bookmarks = await db
       .select({
@@ -316,13 +338,29 @@ router.get("/get-all-bookmarks", async (req: Request, res: Response) => {
           .as("gjb"),
         sql`TRUE`
       )
-      .where(eq(schema.usersBookmarks.userId, user.id));
+      .where(eq(schema.usersBookmarks.userId, user.id))
+      .orderBy(desc(schema.usersBookmarks.createdAt))
+      .limit(limit + 1)
+      .offset(offset);
+
+    const hasNextPage = bookmarks.length > limit;
+    const items = hasNextPage ? bookmarks.slice(0, limit) : bookmarks;
+
+    const responseData = {
+      data: items,
+      pagination: {
+        currentPage: page,
+        limit,
+        hasNextPage,
+        nextPage: hasNextPage ? page + 1 : null,
+      },
+    };
 
     res
       .status(200)
       .json(
         CreateSuccessResponse(
-          bookmarks,
+          responseData,
           "All bookmarks retrieved successfully!"
         )
       );

@@ -9,7 +9,12 @@ import { toast } from "sonner";
 import { bookmark, searchParams, searchType } from "@/types/bookmarkTypes";
 import clsx from "clsx";
 import { ChevronDown, CircleAlert, RefreshCw, X } from "lucide-react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import {
   addBookmark,
   BookmarkJobRetry,
@@ -50,12 +55,12 @@ const BookmarkCard = ({ bookmark }: { bookmark: bookmark }) => {
     });
   }
   return (
-    <div className="relative group">
+    <div className="relative group h-full">
       <motion.a
         href={bookmark.url}
         target="_blank"
         rel="noopener noreferrer"
-        className="bg-muted/50 rounded-xl p-4 hover:bg-muted transition-colors relative flex flex-col items-start justify-center gap-4"
+        className="bg-muted/50 rounded-xl p-4 hover:bg-muted transition-colors relative h-full min-h-[200px] flex flex-col items-start justify-between gap-4"
         whileHover={{ scale: 1.03 }}
         whileTap={{ scale: 0.95 }}
         initial={{ opacity: 0, y: 10 }}
@@ -163,16 +168,24 @@ export default function Bookmarks() {
     globalSetting.default_search_type
   );
   const searchBarRef = useRef<HTMLInputElement>(null);
+  const observerRef = useRef<HTMLDivElement>(null);
 
   const isURL = useCallback((str: string) => URL_REGEX.test(str), []);
 
   const {
     data: bookmarksResponse,
     isLoading: isBookmarkLoading,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
     refetch,
-  } = useQuery<ApiResponse<bookmark[]>>({
+  } = useInfiniteQuery({
     queryKey: ["bookmarks"],
     queryFn: fetchBookmarks,
+    getNextPageParam: (lastPage) => {
+      return lastPage.data?.pagination?.nextPage || undefined;
+    },
+    initialPageParam: 1,
   });
 
   const {
@@ -192,6 +205,42 @@ export default function Bookmarks() {
       queryClient.invalidateQueries({ queryKey: ["bookmarks"] });
     },
   });
+
+  const allBookmarks =
+    bookmarksResponse?.pages?.flatMap((page) =>
+      page.success ? page.data.data : []
+    ) || [];
+
+  // Interaction observer Inf scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const target = entries[0];
+        if (
+          target.isIntersecting &&
+          hasNextPage &&
+          !isFetchingNextPage &&
+          !searchTerm
+        ) {
+          fetchNextPage();
+        }
+      },
+      {
+        threshold: 0.1,
+        rootMargin: "100px",
+      }
+    );
+
+    if (observerRef.current) {
+      observer.observe(observerRef.current);
+    }
+
+    return () => {
+      if (observerRef.current) {
+        observer.unobserve(observerRef.current);
+      }
+    };
+  }, [fetchNextPage, hasNextPage, isFetchingNextPage, searchTerm]);
 
   const handleSearch = useCallback(async () => {
     const query = searchQuery.trim();
@@ -256,13 +305,13 @@ export default function Bookmarks() {
     const normalizedUrl = normalizeUrl(url);
     const toastId = toast.loading("Adding Bookmark");
     try {
-      await mutateAsync({ url: normalizedUrl });
-      if (!bookmarksResponse?.success) {
+      const result = await mutateAsync({ url: normalizedUrl });
+      if (!result.success) {
         if (
-          bookmarksResponse?.error.code === ErrorCodes.VALIDATION_ERROR ||
-          bookmarksResponse?.error.code === ErrorCodes.URL_NOT_SCRAPABLE
+          result?.error.code === ErrorCodes.VALIDATION_ERROR ||
+          result?.error.code === ErrorCodes.URL_NOT_SCRAPABLE
         ) {
-          throw new Error(bookmarksResponse.error.message);
+          throw new Error(result.error.message);
         }
       }
       toast.success("Bookmark added successfully!", { id: toastId });
@@ -299,11 +348,7 @@ export default function Bookmarks() {
   }
 
   const resultsToDisplay =
-    searchResults?.success && !searchTerm !== null
-      ? searchResults.data
-      : bookmarksResponse?.success
-      ? bookmarksResponse.data
-      : [];
+    searchTerm && searchResults?.success ? searchResults.data : allBookmarks;
 
   return (
     <div className="w-full flex flex-col gap-6 h-max py-6">
@@ -388,7 +433,7 @@ export default function Bookmarks() {
         </Button>
       </div>
 
-      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 overflow-y-hidden overflow-x-hidden md:px-6 px-0 pt-4">
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 overflow-y-hidden overflow-x-hidden px-6 py-4 grid-rows-[repeat(auto-fit-1fr)]">
         <AnimatePresence mode="popLayout">
           {isSearchLoading || isBookmarkLoading ? (
             <motion.div
@@ -468,6 +513,62 @@ export default function Bookmarks() {
           )}
         </AnimatePresence>
       </div>
+      {/* intersection observer Target and loading indic */}
+      {!searchTerm && (
+        <>
+          <div ref={observerRef} className="h-10 w-full" />
+          {isFetchingNextPage && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              className="text-center py-4"
+            >
+              <svg
+                className="animate-spin h-5 w-5 text-muted-foreground mx-auto mb-2"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                ></path>
+              </svg>
+              <span className="text-sm text-muted-foreground">
+                Loading more bookmarks...
+              </span>
+            </motion.div>
+          )}
+        </>
+      )}
+      {!hasNextPage && allBookmarks.length > 0 && !searchTerm && (
+        <motion.div
+          key="end-of-data"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          className="text-center text-muted-foreground py-8 flex flex-col items-center justify-center gap-2"
+        >
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-[1px] bg-muted-foreground/30"></div>
+            <span className="text-sm">You've reached the end</span>
+            <div className="w-8 h-[1px] bg-muted-foreground/30"></div>
+          </div>
+          <p className="text-xs text-muted-foreground/70">
+            {allBookmarks.length} bookmark{allBookmarks.length !== 1 ? "s" : ""}{" "}
+            total
+          </p>
+        </motion.div>
+      )}
     </div>
   );
 }

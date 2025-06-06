@@ -2,9 +2,19 @@ import { ApiResponse } from "@/types/apiResponse";
 import { bookmark, newBookmark, searchParams } from "@/types/bookmarkTypes";
 import axios from "axios";
 
-export async function fetchBookmarks(): Promise<ApiResponse<bookmark[]>> {
-  const response = await axios.get<ApiResponse<bookmark[]>>(
-    `${process.env.NEXT_PUBLIC_SERVER_API}/get-all-bookmarks`,
+// type getBookmarkResponse = {
+//   data: bookmark[];
+//   pagination: {
+//     currentPage: number;
+//     limit: number;
+//     hasNextPage: boolean;
+//     nextPage: number | null;
+//   };
+// };
+
+export async function fetchBookmarks({ pageParam = 1 }) {
+  const response = await axios.get(
+    `${process.env.NEXT_PUBLIC_SERVER_API}/get-all-bookmarks?page=${pageParam}&limit=12`,
     {
       withCredentials: true,
     }

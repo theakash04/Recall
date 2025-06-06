@@ -90,20 +90,23 @@ const NavItem = ({
           }
         }}
         type={!href ? "button" : undefined}
-        className={`flex items-center py-2 px-3 rounded-md w-full transition-colors ${isActive
-          ? "bg-sidebar-accent text-sidebar-foreground"
-          : "text-sidebar-foreground hover:bg-sidebar-accent"
-          }${className} cursor-pointer`}
+        className={`flex items-center py-2 px-3 rounded-md w-full transition-colors ${
+          isActive
+            ? "bg-sidebar-accent text-sidebar-foreground"
+            : "text-sidebar-foreground hover:bg-sidebar-accent"
+        }${className} cursor-pointer`}
       >
         <div
-          className={`flex gap-4 items-center w-full ${isExpanded ? "justify-start" : "justify-center"
-            }`}
+          className={`flex gap-4 items-center w-full ${
+            isExpanded ? "justify-start" : "justify-center"
+          }`}
         >
           <span
-            className={`${label === "Logout"
-              ? "text-destructive"
-              : "text-sidebar-foreground"
-              }`}
+            className={`${
+              label === "Logout"
+                ? "text-destructive"
+                : "text-sidebar-foreground"
+            }`}
           >
             {icon}
           </span>
@@ -200,19 +203,20 @@ export function Sidebar() {
     },
   });
 
-  if(!isIdle){
-    return <FullScreenLoader />
+  if (!isIdle) {
+    return <FullScreenLoader />;
   }
 
   return (
     <motion.div
       className={`
         flex flex-col h-screen border-r border-sidebar-border bg-background
-        ${viewport === "mobile"
-          ? isExpanded
-            ? "absolute top-0 left-0 z-50 shadow-lg w-[240px]"
-            : "hidden"
-          : "sticky top-0 z-40"
+        ${
+          viewport === "mobile"
+            ? isExpanded
+              ? "absolute top-0 left-0 z-50 shadow-lg w-[240px]"
+              : "hidden"
+            : "sticky top-0 z-40"
         }
       `}
       animate={{ width: isExpanded ? 240 : 72 }}
@@ -222,12 +226,12 @@ export function Sidebar() {
       <div className="p-4 flex items-center border-b border-sidebar-border justify-between">
         <div className="flex items-center justify-start">
           <div className="relative h-10 w-10 rounded-full overflow-hidden">
-            <Avatar className="h-full w-full rounded-lg">
+            <Avatar className="h-full w-full rounded-full">
               <AvatarImage
                 src={userData?.avatar_url}
                 alt={userData?.full_name}
               />
-              <AvatarFallback className="rounded-lg">
+              <AvatarFallback className="rounded-full">
                 {userData?.full_name
                   ? userData.full_name.charAt(0).toUpperCase()
                   : "U"}

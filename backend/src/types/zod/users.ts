@@ -1,7 +1,7 @@
-import { z } from "zod";
+import { coerce, z } from "zod";
 
 export const userFeedbackSchema = z.object({
-  rating: z
+  rating: z.coerce
     .number()
     .max(5, {
       message: "Rating cannot be more than 5",

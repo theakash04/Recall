@@ -3,6 +3,7 @@ import { Inter } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "next-themes";
+import QueryProvider from "@/components/QueryPrvider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -22,7 +23,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.className} antialiased scrollbar`}>
         <ThemeProvider attribute="class" defaultTheme="dark">
-          <main>{children}</main>
+          <QueryProvider>
+            <main>{children}</main>
+          </QueryProvider>
           <Toaster />
         </ThemeProvider>
       </body>

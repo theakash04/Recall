@@ -28,7 +28,7 @@ export default function Navbar({ animate = true }) {
         <nav className="flex items-center gap-6">
           <ThemeToggle />
           <Button asChild>
-            <Link href="/signin">Get Started</Link>
+            <Link href="/signin">Join Now!</Link>
           </Button>
         </nav>
       </div>

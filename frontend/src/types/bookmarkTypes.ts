@@ -17,6 +17,8 @@ export type bookmark = {
   similarity?: number;
 };
 
+
+
 export type searchParams = {
   query: string;
   search_type: string;
@@ -26,5 +28,4 @@ export type newBookmark = {
   url: string;
 };
 
-export type searchType = "keyword" | "semantic" | "hybrid"
-
+export type searchType = "keyword" | "semantic" | "hybrid";

@@ -1,5 +1,5 @@
 import { ApiResponse } from "@/types/apiResponse";
-import { user } from "@/types/userTypes";
+import { testimonials, user } from "@/types/userTypes";
 import axios from "axios";
 
 export async function fetchUser(): Promise<ApiResponse<user>> {
@@ -53,5 +53,17 @@ export async function addUserFeedback(
     }
   );
 
+  return res.data;
+}
+
+export async function getUserTestimonials(): Promise<
+  ApiResponse<testimonials[]>
+> {
+  const res = await axios.get<ApiResponse<testimonials[]>>(
+    `${process.env.NEXT_PUBLIC_SERVER_API}/auth/get-feedbacks`,
+    {
+      withCredentials: true,
+    }
+  );
   return res.data;
 }
