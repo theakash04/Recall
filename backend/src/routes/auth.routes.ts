@@ -21,7 +21,7 @@ router.get("/login", async (_req: Request, res: Response) => {
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
-      redirectTo: "http://localhost:8000/api/auth/callback",
+      redirectTo: `${process.env.REDIRECT_URL}/api/auth/callback`,
     },
   });
 
