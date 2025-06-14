@@ -71,7 +71,7 @@ router.get("/callback", async (req: Request, res: Response) => {
     session.expires_in
   );
 
-  res.redirect("http://localhost:3000/dashboard");
+  res.redirect(`${process.env.CLIENT_URL}/dashboard`);
 });
 
 // protected route with middleware to fetch user data
