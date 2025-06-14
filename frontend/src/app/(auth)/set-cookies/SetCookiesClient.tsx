@@ -16,12 +16,16 @@ export default function SetCookiesClient() {
       Cookies.set("sb_token", token, {
         path: "/",
         secure: true,
-        sameSite: "None",
+        httpOnly: true,
+        sameSite: "none",
+        maxAge: 15 * 60 * 1000,
       });
       Cookies.set("sb_refresh", refresh, {
         path: "/",
         secure: true,
-        sameSite: "None",
+        httpOnly: true,
+        sameSite: "none",
+        maxAge: 60 * 60 * 24 * 7 * 1000,
       });
     }
 
