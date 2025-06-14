@@ -71,7 +71,17 @@ router.get("/callback", async (req: Request, res: Response) => {
     session.expires_in
   );
 
-  res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+  res.send(`
+  <html>
+    <head>
+      <meta http-equiv="refresh" content="0.5;url=${process.env.CLIENT_URL}/dashboard" />
+      <title>Redirecting...</title>
+    </head>
+    <body>
+      <p>Setting cookies... Redirecting to dashboard.</p>
+    </body>
+  </html>
+`);
 });
 
 // protected route with middleware to fetch user data
