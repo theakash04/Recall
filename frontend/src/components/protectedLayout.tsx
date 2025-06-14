@@ -23,6 +23,7 @@ import { fetchUser } from "@/lib/userApi";
 import ServerErrorPage from "./serverError";
 import { toast } from "sonner";
 import { useGlobalStore } from "@/store/globalStore";
+import { AxiosError } from "axios";
 
 export default function ProtectedLayout({
   children,
@@ -55,22 +56,27 @@ export default function ProtectedLayout({
   });
 
   useEffect(() => {
-    if (isError && error) {
-      const errorRes = !userResponse?.success && userResponse?.error;
-      if (errorRes) {
-        toast.warning(errorRes?.code, {
-          description: errorRes.message,
-        });
-      }
-      if ((error as any)?.status >= 400 && (error as any)?.status < 500) {
+    if (isError) {
+      const apiError = error as AxiosError;
+
+      const status = apiError?.response?.status;
+      const apiMessage = (apiError?.response?.data as any)?.error?.message;
+
+      if (status === 401) {
         router.replace("/signin");
+      }
+
+      if (apiMessage) {
+        toast.warning("Auth Error", {
+          description: apiMessage,
+        });
       }
     }
 
-    if (isSuccess && userResponse.success) {
+    if (isSuccess && userResponse?.success) {
       setUser(userResponse.data);
     }
-  }, [isError, error, router, isSuccess]);
+  }, [isError, error, isSuccess, userResponse, router]);
 
   if (isLoading) {
     return <FullScreenLoader />;
