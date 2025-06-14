@@ -9,7 +9,7 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8000;
-const origins = ["http://localhost:3000", "chrome-extension://gajoohncinjkipflclppgdfbhdbaakdl"];
+const origins = ["http://localhost:3000", "chrome-extension://gajoohncinjkipflclppgdfbhdbaakdl", "https://recall.akashtwt.me"];
 
 app.use(
   pinoHttp({
