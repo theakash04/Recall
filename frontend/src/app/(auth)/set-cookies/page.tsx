@@ -1,31 +1,12 @@
 "use client";
-import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect } from "react";
-import Cookies from "js-cookie";
+
+import { Suspense } from "react";
+import SetCookiesClient from "./SetCookiesClient";
 
 export default function SetCookiesPage() {
-  const searchParams = useSearchParams();
-  const router = useRouter();
-
-  useEffect(() => {
-    const token = searchParams.get("token");
-    const refresh = searchParams.get("refresh");
-
-    if (token && refresh) {
-      Cookies.set("sb_token", token, {
-        path: "/",
-        secure: true,
-        sameSite: "None",
-      });
-      Cookies.set("sb_refresh", refresh, {
-        path: "/",
-        secure: true,
-        sameSite: "None",
-      });
-    }
-
-    router.replace("/dashboard");
-  }, []);
-
-  return <div>Logging you in...</div>;
+  return (
+    <Suspense fallback={<div>Logging in...</div>}>
+      <SetCookiesClient />
+    </Suspense>
+  );
 }
