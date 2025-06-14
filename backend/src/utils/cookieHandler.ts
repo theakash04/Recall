@@ -5,13 +5,13 @@ export const clearAuthCookies = (res: Response) => {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    sameSite: "lax",
+    sameSite: "none",
   });
   res.clearCookie("sb_refresh", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     path: "/",
-    sameSite: "lax",
+    sameSite: "none",
   });
 };
 
@@ -24,16 +24,16 @@ export const setAuthCookies = (
   res.cookie("sb_token", access_token, {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    sameSite: "none",
     path: "/",
     maxAge: expires_in ? expires_in * 1000 : 15 * 60 * 1000,
   });
 
   res.cookie("sb_refresh", refresh_token, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "lax",
+    secure: process.env.NODE_ENV === "prouction",
+    sameSite: "none",
     path: "/",
-    maxAge: 7 * 24 * 60 * 60 * 1000,
+    maxAge: 60 * 60 * 24 * 7 * 1000,
   });
 };

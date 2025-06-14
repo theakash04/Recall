@@ -6,13 +6,13 @@ import {
   CreateSuccessResponse,
   CreateErrorResponse,
 } from "../utils/ResponseHandler";
-import { asc, desc, eq, gt } from "drizzle-orm";
+import { desc, gt } from "drizzle-orm";
 import { ErrorCodes } from "../types/constant";
 import { db } from "../database/dbConnect";
-import { userFeedback, usersBookmarks } from "../database/schema";
+import { userFeedback } from "../database/schema";
 import { clearAuthCookies, setAuthCookies } from "../utils/cookieHandler";
 import { userFeedbackSchema } from "../types/zod/users";
-import { feedbacks, newFeedback } from "../types/dbTypes";
+import { feedbacks } from "../types/dbTypes";
 
 const router: Router = Router();
 
