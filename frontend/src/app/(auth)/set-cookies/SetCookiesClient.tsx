@@ -17,14 +17,14 @@ export default function SetCookiesClient() {
         path: "/",
         secure: true,
         httpOnly: true,
-        sameSite: "none",
+        sameSite: "None",
         maxAge: 15 * 60 * 1000,
       });
       Cookies.set("sb_refresh", refresh, {
         path: "/",
         secure: true,
         httpOnly: true,
-        sameSite: "none",
+        sameSite: "None",
         maxAge: 60 * 60 * 24 * 7 * 1000,
       });
     }
