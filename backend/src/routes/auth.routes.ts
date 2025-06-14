@@ -64,12 +64,12 @@ router.get("/callback", async (req: Request, res: Response) => {
 
   const { session } = data;
 
-  // setAuthCookies(
-  //   res,
-  //   session.access_token,
-  //   session.refresh_token,
-  //   session.expires_in
-  // );
+  setAuthCookies(
+    res,
+    session.access_token,
+    session.refresh_token,
+    session.expires_in
+  );
 
   res.redirect(
     `${process.env.CLIENT_URL}/set-cookies?token=${session.access_token}&refresh=${session.refresh_token}`
