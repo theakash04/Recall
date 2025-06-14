@@ -64,24 +64,16 @@ router.get("/callback", async (req: Request, res: Response) => {
 
   const { session } = data;
 
-  setAuthCookies(
-    res,
-    session.access_token,
-    session.refresh_token,
-    session.expires_in
-  );
+  // setAuthCookies(
+  //   res,
+  //   session.access_token,
+  //   session.refresh_token,
+  //   session.expires_in
+  // );
 
-  res.send(`
-  <html>
-    <head>
-      <meta http-equiv="refresh" content="0.5;url=${process.env.CLIENT_URL}/dashboard" />
-      <title>Redirecting...</title>
-    </head>
-    <body>
-      <p>Setting cookies... Redirecting to dashboard.</p>
-    </body>
-  </html>
-`);
+  res.redirect(
+    `${process.env.CLIENT_URL}/set-cookies?token=${session.access_token}&refresh=${session.refresh_token}`
+  );
 });
 
 // protected route with middleware to fetch user data
