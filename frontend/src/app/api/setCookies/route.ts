@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set('sb_refresh', refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'none',
       maxAge: 604800,
       path: '/'
     });
