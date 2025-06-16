@@ -21,7 +21,6 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import useViewport from "@/hooks/useViewPort";
 import { useTheme } from "next-themes";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
 import FullScreenLoader from "../Loading";
 import { getBrowserClient } from "@/utils/supabase/client";
 
@@ -204,6 +203,10 @@ export function Sidebar() {
     router.push("/");
     setIsLoading(false);
   };
+
+  if (isLoading) {
+    return <FullScreenLoader />;
+  }
 
   return (
     <motion.div
