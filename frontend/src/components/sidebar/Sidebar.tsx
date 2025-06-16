@@ -201,7 +201,6 @@ export function Sidebar() {
       setIsLoading(false);
     }
     router.push("/");
-    setIsLoading(false);
   };
 
   if (isLoading) {
