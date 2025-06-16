@@ -73,6 +73,11 @@ router.get("/callback", async (req: Request, res: Response) => {
   res.redirect(`${process.env.CLIENT_URL}/signin/callback?${params}`);
 });
 
+//check user auth
+router.get("/check-auth", guardApi, async (req: Request, res: Response) => {
+  res.json(CreateSuccessResponse("User is Authenticated"));
+});
+
 // protected route with middleware to fetch user data
 router.get("/get-user", guardApi, async (req: Request, res: Response) => {
   const user = (req as any).user as user;

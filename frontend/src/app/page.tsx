@@ -7,45 +7,12 @@ import { Button } from "@/components/ui/button";
 import { getUserTestimonials } from "@/lib/userApi";
 import { ApiResponse } from "@/types/apiResponse";
 import { testimonials } from "@/types/userTypes";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { ArrowRight, Bookmark, Search, Zap, Star } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { ArrowRight, Bookmark, Search, Star } from "lucide-react";
 import { motion } from "motion/react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
-
-const staggerContainer = {
-  hidden: {},
-  visible: {
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-};
-
-const fadeUp = {
-  hidden: { opacity: 0, y: 40 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: "easeOut" },
-  },
-};
-
-const features = [
-  {
-    title: "Smart Bookmarking",
-    description:
-      "Simply paste any URL and our system automatically scrapes and saves the content from blogs, articles, and documentation.",
-    icon: Bookmark,
-  },
-  {
-    title: "Intelligent Search",
-    description:
-      "Find your saved content using keyword search, semantic search, or hybrid search - even when you only remember vague details.",
-    icon: Search,
-  },
-];
 
 export default function HomePage() {
   const {

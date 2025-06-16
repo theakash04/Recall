@@ -1,18 +1,29 @@
+import axios from "axios";
 import { NextRequest, NextResponse } from "next/server";
+import { ApiResponse } from "./types/apiResponse";
 
-const publicRoutes = ["/signin", "/", "/signin/callback"];
+const publicRoutes = ["/signin", "/"];
 
-export function middleware(req: NextRequest) {
+export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
   const isPublicRoute = publicRoutes.includes(pathname);
-  const token =
-    req.cookies.get("sb_token")?.value || req.cookies.get("sb_refresh")?.value;
 
-  if (!isPublicRoute && !token) {
+  const isAuthenticated = await axios.get<ApiResponse<undefined>>(
+    `${process.env.NEXT_PUBLIC_SERVER_API}/auth/check-auth`,
+    {
+      withCredentials: true,
+    }
+  );
+
+  if (!isPublicRoute && !isAuthenticated.data.success) {
     return NextResponse.redirect(new URL("/signin", req.url));
   }
 
-  if (isPublicRoute && token && !pathname.startsWith("/dashboard")) {
+  if (
+    isPublicRoute &&
+    isAuthenticated.data.success &&
+    !pathname.startsWith("/dashboard")
+  ) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
