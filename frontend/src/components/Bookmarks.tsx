@@ -20,7 +20,7 @@ import {
   BookmarkJobRetry,
   fetchBookmarks,
   searchBookmark,
-} from "@/lib/bookmarksApi";
+} from "@/utils/bookmarksApi";
 import { ApiResponse } from "@/types/apiResponse";
 import { ErrorCodes } from "@/types/constant";
 import { useGlobalStore } from "@/store/globalStore";

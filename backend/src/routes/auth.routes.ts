@@ -6,114 +6,14 @@ import {
   CreateSuccessResponse,
   CreateErrorResponse,
 } from "../utils/ResponseHandler";
-import { asc, desc, eq, gt } from "drizzle-orm";
+import { desc, gt } from "drizzle-orm";
 import { ErrorCodes } from "../types/constant";
 import { db } from "../database/dbConnect";
-import { userFeedback, usersBookmarks } from "../database/schema";
-import { clearAuthCookies, setAuthCookies } from "../utils/cookieHandler";
+import { userFeedback } from "../database/schema";
 import { userFeedbackSchema } from "../types/zod/users";
-import { feedbacks, newFeedback } from "../types/dbTypes";
+import { feedbacks } from "../types/dbTypes";
 
 const router: Router = Router();
-
-// login route oAuth google
-router.get("/login", async (_req: Request, res: Response) => {
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider: "google",
-    options: {
-      redirectTo: `${process.env.REDIRECT_URL}/api/auth/callback`,
-    },
-  });
-
-  if (error) {
-    res.status(500).json({
-      status: 500,
-      message: "Something unexpected happened!",
-    });
-    return;
-  }
-  res.redirect(data.url);
-});
-
-// callback route for handling the token
-router.get("/callback", async (req: Request, res: Response) => {
-  const code = req.query.code as string;
-
-  if (!code) {
-    res
-      .status(400)
-      .json(
-        CreateErrorResponse(
-          ErrorCodes.NO_TOKEN,
-          "no token provided from google auth"
-        )
-      );
-    return;
-  }
-
-  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-
-  if (error) {
-    res
-      .status(500)
-      .json(
-        CreateErrorResponse(ErrorCodes.SERVER_ERROR, "Something went Wrong")
-      );
-    return;
-  }
-
-  const { session } = data;
-
-  setAuthCookies(
-    res,
-    session.access_token,
-    session.refresh_token,
-    session.expires_in
-  );
-
-  res.redirect(`${process.env.CLIENT_URL}/dashboard`);
-});
-
-//check user auth
-router.get("/check-auth", guardApi, async (req: Request, res: Response) => {
-  res.json(CreateSuccessResponse("User is Authenticated"));
-});
-
-// protected route with middleware to fetch user data
-router.get("/get-user", guardApi, async (req: Request, res: Response) => {
-  const user = (req as any).user as user;
-
-  const { avatar_url, email, email_verified, full_name } = user;
-
-  const selectedUserMetadata = {
-    avatar_url,
-    email,
-    email_verified,
-    full_name,
-  };
-
-  res.json(CreateSuccessResponse(selectedUserMetadata, "User Found"));
-});
-
-// logout handling
-router.get("/logout", guardApi, async (req: Request, res: Response) => {
-  const { error } = await supabase.auth.signOut({ scope: "local" });
-  if (error) {
-    res
-      .status(500)
-      .json(
-        CreateErrorResponse(
-          ErrorCodes.SERVER_ERROR,
-          "Something unexpected happened!",
-          error.message
-        )
-      );
-    return;
-  }
-
-  clearAuthCookies(res);
-  res.status(200).json(CreateSuccessResponse("Logout successfully!"));
-});
 
 // delete user account
 router.get("/delete-account", guardApi, async (req: Request, res: Response) => {
@@ -124,8 +24,6 @@ router.get("/delete-account", guardApi, async (req: Request, res: Response) => {
     if (error) {
       throw new Error("Error while deleting user Account!");
     }
-
-    clearAuthCookies(res);
 
     res.status(200).json(CreateSuccessResponse("User deleted Successfully!"));
   } catch (err) {

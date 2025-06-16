@@ -2,7 +2,7 @@
 import { ConfirmModal } from "@/components/ConfirmModal";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { deleteUserAccount } from "@/lib/userApi";
+import { deleteUserAccount } from "@/utils/userApi";
 import { useGlobalStore } from "@/store/globalStore";
 import { useUserStore } from "@/store/useStore";
 import { searchType } from "@/types/bookmarkTypes";
@@ -99,7 +99,9 @@ export default function Page() {
         <div className="flex flex-col gap-2 items-center justify-center pb-5">
           <span className="text-xl font-semibold flex gap-2 items-center">
             {userData?.full_name}
-            {userData?.email_verified ? <VerifiedIcon size={18} color="#01befe"/> : null}
+            {userData?.email_verified ? (
+              <VerifiedIcon size={18} color="#01befe" />
+            ) : null}
           </span>
           <span className="text-sm text-muted-foreground">
             {userData?.email}

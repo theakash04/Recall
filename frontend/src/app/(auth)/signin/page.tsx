@@ -11,13 +11,14 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { signInWithGoogle } from "@/app/actions/signInWithGoogle";
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
-    window.location.href = `${process.env.NEXT_PUBLIC_SERVER_API}/auth/login`;
+    signInWithGoogle();
   };
 
   return (

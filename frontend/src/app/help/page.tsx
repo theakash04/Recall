@@ -61,7 +61,7 @@ export default function HelpPage() {
         <div className="mb-12 flex flex-row w-full items-center justify-center">
           <Link
             href="/feedback"
-            className="bg-card rounded-lg  p-6  hover:scale-105 transition-all duration-300 transform group max-w-4xl w-full"
+            className="bg-card rounded-lg  p-6  hover:scale-105 transition-all duration-300 transform group max-w-2xl w-full"
           >
             <div className="text-center">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors duration-300">

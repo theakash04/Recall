@@ -10,7 +10,6 @@ import {
   PanelLeft,
   MoonIcon,
   SunIcon,
-  DownloadIcon,
   MessagesSquare,
 } from "lucide-react";
 import Link from "next/link";
@@ -22,9 +21,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { toast } from "sonner";
 import useViewport from "@/hooks/useViewPort";
 import { useTheme } from "next-themes";
-import { logoutUser } from "@/lib/userApi";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import FullScreenLoader from "../Loading";
+import { getBrowserClient } from "@/utils/supabase/client";
 
 type NavItemProps = {
   icon: React.ReactNode;
@@ -167,12 +166,13 @@ const NavItem = ({
 };
 
 export function Sidebar() {
-  const queryClient = useQueryClient();
   const viewport = useViewport();
   const { isExpanded, setExpanded, toggleSidebar } = useSidebarStore();
   const { userData, clearUser } = useUserStore();
   const { setTheme, theme } = useTheme();
   const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const supabase = getBrowserClient();
 
   const collapseOnMobile = () => {
     if (viewport === "mobile") {
@@ -190,22 +190,20 @@ export function Sidebar() {
     }
   }, [viewport, setExpanded]);
 
-  const { mutateAsync, isIdle } = useMutation({
-    mutationFn: logoutUser,
-    onSuccess() {
-      queryClient.cancelQueries({ queryKey: ["user"] });
-      router.replace("/");
-      clearUser();
-      toast.info("Logout successfully!");
-    },
-    onError() {
-      toast.error("Logout failed!");
-    },
-  });
+  const handleLogout = async () => {
+    setIsLoading(true);
+    const { error } = await supabase.auth.signOut();
+    clearUser();
 
-  if (!isIdle) {
-    return <FullScreenLoader />;
-  }
+    if (error) {
+      toast.error("Error while Signing out", {
+        description: error.message,
+      });
+      setIsLoading(false);
+    }
+    router.push("/");
+    setIsLoading(false);
+  };
 
   return (
     <motion.div
@@ -328,8 +326,8 @@ export function Sidebar() {
         <NavItem
           icon={<LogOut size={18} />}
           label="Logout"
-          disabled={!isIdle}
-          onClick={async () => await mutateAsync()}
+          disabled={isLoading}
+          onClick={handleLogout}
         />
       </div>
     </motion.div>

@@ -2,7 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { addUserFeedback } from "@/lib/userApi";
+import { addUserFeedback } from "@/utils/userApi";
 import { toast } from "sonner";
 
 export default function FeedbackPage() {

@@ -270,8 +270,8 @@ router.get("/get-all-bookmarks", async (req: Request, res: Response) => {
   }
 
   const result = paginationSchema.safeParse({
-    page: req.query.page,
-    limit: req.query.limit,
+    page: req.params.page,
+    limit: req.params.limit,
   });
 
   if (!result.success) {

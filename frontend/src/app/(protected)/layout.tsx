@@ -1,4 +1,5 @@
 "use client";
+import AuthProvider from "@/components/AuthWrapper";
 import FullScreenLoader from "@/components/Loading";
 import { Sidebar } from "@/components/sidebar/Sidebar";
 import {
@@ -35,59 +36,61 @@ export default function ProtectedLayout({
   let fullPath = "";
 
   return (
-    <div className="flex min-h-screen relative overflow-auto scrollbar">
-      <Sidebar />
-      <div className="flex flex-col max-w-[100rem] mx-auto w-full">
-        <main className="">
-          <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 bg-background">
-            <div className="flex items-center gap-2 px-4">
-              <Button onClick={() => toggleSidebar()} variant={"ghost"}>
-                <PanelRight />
-              </Button>
-              <Separator
-                orientation="vertical"
-                className="mr-2 data-[orientation=vertical]:h-4"
-              />
-              <Breadcrumb>
-                <BreadcrumbList>
-                  {pathSegments.length > 0 && (
-                    <>
-                      <BreadcrumbSeparator />
-                      {pathSegments.map((segment, index) => {
-                        fullPath += `/${segment}`;
-                        const isLast = index === pathSegments.length - 1;
+    <AuthProvider>
+      <div className="flex min-h-screen relative overflow-auto scrollbar">
+        <Sidebar />
+        <div className="flex flex-col max-w-[100rem] mx-auto w-full">
+          <main className="">
+            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 bg-background">
+              <div className="flex items-center gap-2 px-4">
+                <Button onClick={() => toggleSidebar()} variant={"ghost"}>
+                  <PanelRight />
+                </Button>
+                <Separator
+                  orientation="vertical"
+                  className="mr-2 data-[orientation=vertical]:h-4"
+                />
+                <Breadcrumb>
+                  <BreadcrumbList>
+                    {pathSegments.length > 0 && (
+                      <>
+                        <BreadcrumbSeparator />
+                        {pathSegments.map((segment, index) => {
+                          fullPath += `/${segment}`;
+                          const isLast = index === pathSegments.length - 1;
 
-                        return (
-                          <Fragment key={index}>
-                            <BreadcrumbItem>
-                              {isLast ? (
-                                <BreadcrumbPage>
-                                  {formatSegment(segment)}
-                                </BreadcrumbPage>
-                              ) : (
-                                <BreadcrumbLink href={fullPath}>
-                                  {formatSegment(segment)}
-                                </BreadcrumbLink>
-                              )}
-                            </BreadcrumbItem>
-                            {!isLast && <BreadcrumbSeparator />}
-                          </Fragment>
-                        );
-                      })}
-                    </>
-                  )}
-                </BreadcrumbList>
-              </Breadcrumb>
-            </div>
-          </header>
-          <Suspense fallback={<FullScreenLoader />}>
-            <div key={pathname} className="h-[85vh]">
-              {children}
-            </div>
-          </Suspense>
-        </main>
+                          return (
+                            <Fragment key={index}>
+                              <BreadcrumbItem>
+                                {isLast ? (
+                                  <BreadcrumbPage>
+                                    {formatSegment(segment)}
+                                  </BreadcrumbPage>
+                                ) : (
+                                  <BreadcrumbLink href={fullPath}>
+                                    {formatSegment(segment)}
+                                  </BreadcrumbLink>
+                                )}
+                              </BreadcrumbItem>
+                              {!isLast && <BreadcrumbSeparator />}
+                            </Fragment>
+                          );
+                        })}
+                      </>
+                    )}
+                  </BreadcrumbList>
+                </Breadcrumb>
+              </div>
+            </header>
+            <Suspense fallback={<FullScreenLoader />}>
+              <div key={pathname} className="h-[85vh]">
+                {children}
+              </div>
+            </Suspense>
+          </main>
+        </div>
       </div>
-    </div>
+    </AuthProvider>
   );
 }
 
