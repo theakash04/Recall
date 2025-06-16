@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "next-themes";
 import QueryProvider from "@/components/QueryPrvider";
+import AuthWrapper from "@/components/AuthWrapper";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -38,7 +39,9 @@ export default function RootLayout({
       <body className={`${inter.className} antialiased scrollbar`}>
         <ThemeProvider attribute="class" defaultTheme="dark">
           <QueryProvider>
-            <main>{children}</main>
+            <AuthWrapper>
+              <main>{children}</main>
+            </AuthWrapper>
           </QueryProvider>
           <Toaster />
         </ThemeProvider>
