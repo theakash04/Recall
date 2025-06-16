@@ -10,6 +10,7 @@ import { testimonials } from "@/types/userTypes";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { ArrowRight, Bookmark, Search, Zap, Star } from "lucide-react";
 import { motion } from "motion/react";
+import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -44,12 +45,6 @@ const features = [
       "Find your saved content using keyword search, semantic search, or hybrid search - even when you only remember vague details.",
     icon: Search,
   },
-  {
-    title: "Lightning Fast",
-    description:
-      "Get instant results from hundreds or thousands of saved articles. No more scrolling through endless bookmarks.",
-    icon: Zap,
-  },
 ];
 
 export default function HomePage() {
@@ -61,6 +56,7 @@ export default function HomePage() {
     queryKey: ["testimonials"],
     queryFn: getUserTestimonials,
   });
+  const { theme } = useTheme();
 
   const testimonials = testimonialResponse?.success
     ? testimonialResponse.data
@@ -71,7 +67,7 @@ export default function HomePage() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col relative bg-background overflow-x-hidden">
+    <div className="flex min-h-screen flex-col  bg-background overflow-x-hidden">
       {/* Header */}
       <Navbar />
       <main className="flex-1 w-full items-start flex flex-col">
@@ -82,8 +78,9 @@ export default function HomePage() {
               Never forget what you read. Smart bookmarks with AI recall.
             </h1>
             <p className="mb-8 text-lg text-muted-foreground md:text-xl">
-              Save articles, websites, and documents. Ask questions about them
-              later. Recall remembers everything so you don't have to.
+              Bookmark articles and websites freely. Find them using any words
+              you remember about the content, not just exact titles. Recall's
+              smart search makes rediscovering bookmarks effortless.
             </p>
             <Button asChild size="lg" className="px-8 py-6 text-lg">
               <Link href="/signin" className="flex items-center gap-2">
@@ -93,51 +90,27 @@ export default function HomePage() {
           </div>
 
           {/* image section to preview website! */}
-          <div className="bg-muted/50 mt-16 p-4 md:p-8 shadow-lg rounded-lg border">
+          <div className="bg-muted/50 mt-16 p-4 md:p-4 shadow-lg rounded-lg border">
             <Image
-              src="/placeholder.png"
+              src={
+                theme === "dark"
+                  ? "/placeholder-dark.png"
+                  : "/placeholder-light.png"
+              }
               alt="RecallMark Interface Preview"
               width={1200}
               height={900}
               priority
-              className="rounded-md shadow-md object-contain aspect-video"
+              className="rounded-md shadow-md object-contain aspect-video transition-all"
             />
           </div>
 
-          {/* Features Section */}
-          <motion.section
-            variants={staggerContainer}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true, amount: 0.3 }}
-            className="container mx-auto px-4 py-20"
-          >
-            <h2 className="mb-12 text-center text-3xl font-bold md:text-4xl text-foreground">
-              How it works
-            </h2>
-            <div className="grid gap-8 grid-cols-1 lg:grid-cols-3">
-              {features.map(({ title, description, icon: Icon }, i) => (
-                <motion.div
-                  whileHover={{ scale: 1.05 }}
-                  key={title}
-                  custom={i}
-                  variants={fadeUp}
-                  className="flex flex-col items-center text-center bg-card p-6 rounded-lg shadow-lg border"
-                >
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 text-primary">
-                    <Icon className="h-8 w-8" />
-                  </div>
-                  <h3 className="mb-2 text-xl font-semibold text-foreground">
-                    {title}
-                  </h3>
-                  <p className="text-muted-foreground">{description}</p>
-                </motion.div>
-              ))}
-            </div>
-          </motion.section>
-
           {/* User Testimonials Section */}
-          <div className={`w-full bg-muted/30 ${!isError ? "pt-10" : "py-10"}`}>
+          <div
+            className={`w-full bg-muted/30 ${
+              !isError ? "pt-10" : "py-10"
+            } mt-10`}
+          >
             <div
               className={`container mx-auto px-4 ${
                 !isError ? "mb-12" : "mb-5"

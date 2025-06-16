@@ -64,14 +64,13 @@ router.get("/callback", async (req: Request, res: Response) => {
 
   const { session } = data;
 
-  setAuthCookies(
-    res,
-    session.access_token,
-    session.refresh_token,
-    session.expires_in
-  );
+  const params = new URLSearchParams({
+    access_token: session.access_token,
+    refresh_token: session.refresh_token,
+    expires_in: session.expires_in.toString(),
+  });
 
-  res.redirect(`${process.env.CLIENT_URL}/dashboard`);
+  res.redirect(`${process.env.CLIENT_URL}/signin/callback?${params}`);
 });
 
 // protected route with middleware to fetch user data
@@ -179,7 +178,7 @@ router.post("/add-feedback", guardApi, async (req: Request, res: Response) => {
 // route to get feedback from the user and show it on home screen
 router.get("/get-feedbacks", async (req: Request, res: Response) => {
   try {
-    const feedbacks = await db
+    let feedbacks = await db
       .select({
         id: userFeedback.id,
         rating: userFeedback.rating,
@@ -188,7 +187,7 @@ router.get("/get-feedbacks", async (req: Request, res: Response) => {
       })
       .from(userFeedback)
       .where(gt(userFeedback.rating, 4))
-      .limit(7)
+      .limit(10)
       .orderBy(desc(userFeedback.rating))
       .then(async (feedbacks) => {
         const uniqueFeedbacksMap = new Map();
@@ -227,6 +226,10 @@ router.get("/get-feedbacks", async (req: Request, res: Response) => {
 
         return feedbacksWithUserDetails;
       });
+
+    if (feedbacks && feedbacks?.length < 5) {
+      feedbacks = [];
+    }
 
     res
       .status(200)

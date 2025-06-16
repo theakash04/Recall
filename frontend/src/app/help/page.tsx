@@ -12,27 +12,33 @@ import { Button } from "@/components/ui/button";
 const faqData = [
   {
     id: "faq-1",
-    question: "How do I reset my password?",
+    question: "What is Recall and how does it work?",
     answer:
-      'Click on "Forgot Password" on the login page and follow the instructions sent to your email.',
+      "Recall is a smart bookmark manager that organizes your links and helps you find them instantly with powerful search capabilities.",
   },
   {
     id: "faq-2",
+    question: "Can I access my data from multiple devices?",
+    answer:
+      "Yes, your data is synced across all devices. Simply sign in with the same account on any device to access your information.",
+  },
+  {
+    id: "faq-3",
     question: "Is my data secure?",
     answer:
       "Yes, we use industry-standard encryption and security measures to protect your data.",
   },
   {
-    id: "faq-3",
-    question: "Can I export my data?",
-    answer:
-      "Yes, you can export your data at any time from your account settings.",
-  },
-  {
     id: "faq-4",
     question: "How do I delete my account?",
     answer:
-      "Contact our support team to permanently delete your account and all associated data.",
+      "Navigate to Settings from your dashboard, scroll down to the 'Danger Zone' section, and click on 'Delete Account'. Please note this action is permanent and cannot be undone.",
+  },
+  {
+    id: "faq-5",
+    question: "How can I provide feedback or report bugs?",
+    answer:
+      "You can send feedback through our feedback form, contact us on Twitter @theakash04, or report bugs directly on our GitHub repository.",
   },
 ];
 
@@ -52,39 +58,10 @@ export default function HelpPage() {
         </div>
 
         {/* Quick Actions */}
-        <div className="grid md:grid-cols-2 gap-6 mb-12">
-          <Link
-            href="/contact"
-            className="bg-card rounded-lg  p-6 hover:scale-105 transition-all duration-300 transform group"
-          >
-            <div className="text-center">
-              <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors duration-300">
-                <svg
-                  className="w-6 h-6 text-primary group-hover:scale-110 transition-transform duration-300"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                  />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-foreground mb-2 group-hover:text-primary transition-colors duration-300">
-                Contact Support
-              </h3>
-              <p className="text-muted-foreground">
-                Get in touch with our support team
-              </p>
-            </div>
-          </Link>
-
+        <div className="mb-12 flex flex-row w-full items-center justify-center">
           <Link
             href="/feedback"
-            className="bg-card rounded-lg  p-6  hover:scale-105 transition-all duration-300 transform group"
+            className="bg-card rounded-lg  p-6  hover:scale-105 transition-all duration-300 transform group max-w-4xl w-full"
           >
             <div className="text-center">
               <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mx-auto mb-4 group-hover:bg-primary/20 transition-colors duration-300">
@@ -127,8 +104,7 @@ export default function HelpPage() {
                   Create Your Account
                 </h3>
                 <p className="text-muted-foreground">
-                  Sign up with your email address and verify your account to get
-                  started.
+                  sign up with your google Account!
                 </p>
               </div>
             </div>
@@ -138,25 +114,11 @@ export default function HelpPage() {
               </div>
               <div className="ml-4">
                 <h3 className="text-lg font-semibold text-foreground">
-                  Explore Features
+                  Add bookmarks and search
                 </h3>
                 <p className="text-muted-foreground">
-                  Browse through our main features and familiarize yourself with
-                  the interface.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-start group hover:bg-muted/20 p-4 rounded-lg transition-colors duration-300">
-              <div className="flex-shrink-0 w-8 h-8 bg-primary text-primary-foreground rounded-full flex items-center justify-center font-bold text-sm group-hover:scale-110 transition-transform duration-300">
-                3
-              </div>
-              <div className="ml-4">
-                <h3 className="text-lg font-semibold text-foreground">
-                  Start Using
-                </h3>
-                <p className="text-muted-foreground">
-                  Begin utilizing the platform's features to enhance your
-                  workflow and productivity.
+                  Add bookmarks though links and search from multiple bookmarks
+                  easily with smart search engine.
                 </p>
               </div>
             </div>
@@ -189,16 +151,11 @@ export default function HelpPage() {
             Our support team is here to assist you with any questions or issues.
           </p>
           <div className="space-y-4 sm:space-y-0 sm:space-x-4 sm:flex sm:justify-center">
-            <a href="https://x.com/theakash04/" target="_blank">
-              <Button variant={"default"} className="cursor-pointer">
-                Contact Dev
-              </Button>
-            </a>
             <a
               href="https://github.com/theakash04/Recall/issues"
               target="_blank"
             >
-              <Button variant={"secondary"} className="cursor-pointer">
+              <Button variant={"default"} className="cursor-pointer">
                 Report a Bug
               </Button>
             </a>

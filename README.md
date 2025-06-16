@@ -18,7 +18,7 @@
 
 ## 🧠 Why I Built This
 
-I built Recall to dive deep into modern search systems — like semantic search — and to gain full control over a production-grade stack with database modeling, embeddings, workers, and search indexing.
+I built Recall to learn more about modern search systems — like semantic search — and to gain full control over a production-grade stack with database modeling, embeddings, workers, and search indexing.
 
 ---
 
@@ -44,12 +44,12 @@ I built Recall to dive deep into modern search systems — like semantic search 
 
 ---
 
-## 🐳 Local Dev with Docker
+## 🐳 Start locally with Docker 
 
 ```bash
 # Spin up all services
 docker-compose up --build
 ```
 
-# [License](./LICENSE)
+### [License](./LICENSE)
 
