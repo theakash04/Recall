@@ -14,7 +14,7 @@ export async function POST(request: NextRequest) {
     response.cookies.set('sb_token', accessToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
+      sameSite: 'none',
       maxAge: parseInt(expiresIn) ? parseInt(expiresIn) * 1000 : 15 * 60 * 1000,
       path: '/'
     });
