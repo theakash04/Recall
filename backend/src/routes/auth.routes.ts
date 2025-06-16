@@ -64,13 +64,14 @@ router.get("/callback", async (req: Request, res: Response) => {
 
   const { session } = data;
 
-  const params = new URLSearchParams({
-    access_token: session.access_token,
-    refresh_token: session.refresh_token,
-    expires_in: session.expires_in.toString(),
-  });
+  setAuthCookies(
+    res,
+    session.access_token,
+    session.refresh_token,
+    session.expires_in
+  );
 
-  res.redirect(`${process.env.CLIENT_URL}/signin/callback?${params}`);
+  res.redirect(`${process.env.CLIENT_URL}/dashboard`);
 });
 
 //check user auth
