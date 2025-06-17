@@ -1,6 +1,8 @@
 # 📘 Recall
 
-![Demo](./demo.gif) <!-- Replace this with your actual video/GIF path -->
+
+
+[!demo](https://github.com/user-attachments/assets/f83d86ab-4baa-43dc-b813-4e465ab7fb94)
 
 > **Smart bookmarks powered by AI.**  
 > Save websites, documents, and articles — then Search it later.
