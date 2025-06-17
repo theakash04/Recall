@@ -41,7 +41,7 @@ export default function ProtectedLayout({
         <Sidebar />
         <div className="flex flex-col max-w-[100rem] mx-auto w-full">
           <main className="">
-            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 bg-background">
+            <header className="flex h-16 shrink-0 items-center gap-2 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-12 sticky top-0 bg-background z-50">
               <div className="flex items-center gap-2 px-4">
                 <Button onClick={() => toggleSidebar()} variant={"ghost"}>
                   <PanelRight />
