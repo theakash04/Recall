@@ -1,11 +1,10 @@
 import { ApiResponse } from "@/types/apiResponse";
 import { bookmark, newBookmark, searchParams } from "@/types/bookmarkTypes";
-import axios from "axios";
 import api from "./apiClient";
 
 export async function fetchBookmarks({ pageParam = 1 }) {
-  const { data } = await api.get(`/get-all-bookmarks?page=${pageParam}`, {
-    params: { page: pageParam, limit: 12 },
+  const { data } = await api.get(`/get-all-bookmarks`, {
+    params: { page: pageParam, limit: 10 },
   });
 
   return data;
