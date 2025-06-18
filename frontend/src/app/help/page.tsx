@@ -89,6 +89,37 @@ export default function HelpPage() {
           </Link>
         </div>
 
+        {/* How to Use Video Section */}
+        <div className="bg-card rounded-lg p-8 mb-8 text-center">
+          <h2 className="text-2xl font-bold text-foreground mb-4">
+            How to Use Recall
+          </h2>
+          <p className="text-lg text-muted-foreground mb-6">
+            Watch this quick tutorial to learn how to make the most of Recall's
+            smart bookmark manager
+          </p>
+          <div className="relative w-full max-w-4xl mx-auto">
+            <div
+              className="relative overflow-hidden rounded-lg shadow-lg bg-black"
+              style={{ paddingBottom: "56.25%" }}
+            >
+              <iframe
+                className="absolute top-0 left-0 w-full h-full"
+                src="https://www.youtube.com/embed/vUdmjR8TZdc?si=ohZx9J9tU-TJJJTU"
+                title="YouTube video player"
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                referrerPolicy="strict-origin-when-cross-origin"
+                allowFullScreen
+              />
+            </div>
+          </div>
+          <p className="text-sm text-muted-foreground mt-4">
+            Learn the key features and tips to maximize your productivity with
+            Recall
+          </p>
+        </div>
+
         {/* Getting Started */}
         <div className="rounded-lg  p-8 mb-8  w-full">
           <h2 className="text-2xl font-bold text-foreground mb-6">
