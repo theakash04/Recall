@@ -10,22 +10,47 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Recall",
+  title: {
+    default: "Recall - Smart Bookmark Manager",
+    template: "%s | Recall",
+  },
   description:
-    "Save articles, websites, and documents. Ask questions about them later. Recall remembers everything so you don't have to.",
-  authors: [{ name: "Akash", url: "https://akashtwt.me" }],
-  category: "utility",
+    "Never forget what you read. Smart bookmarks with AI recall. Bookmark articles and websites, find them using any words you remember.",
   keywords: [
     "bookmark manager",
-    "knowledge management",
-    "save articles",
-    "document storage",
     "AI search",
-    "productivity tool",
-    "web clipper",
-    "note taking",
+    "productivity",
+    "knowledge management",
   ],
-  applicationName: "Recall",
+  authors: [{ name: "Akash", url: "https://akashtwt.me" }],
+  creator: "Akash",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    url: "https://recall.com",
+    siteName: "Recall",
+    title: "Recall - Smart Bookmark Manager",
+    description: "Never forget what you read. Smart bookmarks with AI recall.",
+    images: [
+      {
+        url: "/placeholder-dark.png",
+        width: 1200,
+        height: 630,
+        alt: "Recall - Smart Bookmark Manager",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Recall - Smart Bookmark Manager",
+    description: "Never forget what you read. Smart bookmarks with AI recall.",
+    creator: "@theakash04",
+    images: ["/placeholder-dark.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
 };
 
 export default function RootLayout({
