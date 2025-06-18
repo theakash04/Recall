@@ -2,20 +2,24 @@
 import AnimatedSection from "@/components/AnimationSection";
 import FullScreenLoader from "@/components/Loading";
 import Navbar from "@/components/Navbar";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { getUserTestimonials } from "@/utils/userApi";
-import { ApiResponse } from "@/types/apiResponse";
-import { testimonials } from "@/types/userTypes";
-import { useQuery } from "@tanstack/react-query";
-import { ArrowRight, Star } from "lucide-react";
-import { motion } from "motion/react";
+import { ArrowRight } from "lucide-react";
 import { useTheme } from "next-themes";
 import Image from "next/image";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 
 export default function HomePage() {
   const { theme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return <FullScreenLoader />;
+  }
 
   return (
     <div className="flex min-h-screen flex-col  bg-background overflow-x-hidden">
@@ -42,18 +46,20 @@ export default function HomePage() {
 
           {/* image section to preview website! */}
           <div className="bg-muted/50 mt-16 p-4 md:p-4 shadow-lg rounded-lg border">
-            <Image
-              src={
-                theme === "dark"
-                  ? "/placeholder-dark.png"
-                  : "/placeholder-light.png"
-              }
-              alt="RecallMark Interface Preview"
-              width={1200}
-              height={900}
-              priority
-              className="rounded-md shadow-md object-contain aspect-video transition-all"
-            />
+            {mounted && (
+              <Image
+                src={
+                  theme === "dark"
+                    ? "/placeholder-dark.png"
+                    : "/placeholder-light.png"
+                }
+                alt="RecallMark Interface Preview"
+                width={1200}
+                height={900}
+                priority
+                className="rounded-md shadow-md object-contain aspect-video transition-all"
+              />
+            )}
           </div>
 
           {/* User Testimonials Section */}
