@@ -15,23 +15,7 @@ import Image from "next/image";
 import Link from "next/link";
 
 export default function HomePage() {
-  const {
-    data: testimonialResponse,
-    isLoading,
-    isError,
-  } = useQuery<ApiResponse<testimonials[]>>({
-    queryKey: ["testimonials"],
-    queryFn: getUserTestimonials,
-  });
   const { theme } = useTheme();
-
-  const testimonials = testimonialResponse?.success
-    ? testimonialResponse.data
-    : [];
-
-  if (isLoading) {
-    return <FullScreenLoader />;
-  }
 
   return (
     <div className="flex min-h-screen flex-col  bg-background overflow-x-hidden">
@@ -73,16 +57,8 @@ export default function HomePage() {
           </div>
 
           {/* User Testimonials Section */}
-          <div
-            className={`w-full bg-muted/30 ${
-              !isError ? "pt-10" : "py-10"
-            } mt-10`}
-          >
-            <div
-              className={`container mx-auto px-4 ${
-                !isError ? "mb-12" : "mb-5"
-              }`}
-            >
+          <div className={`w-full bg-muted/30 pt-10 mt-10`}>
+            <div className={`container mx-auto px-4 mb-5`}>
               <h2 className="text-center text-3xl font-bold md:text-4xl text-foreground mb-4">
                 Loved by readers worldwide
               </h2>
@@ -91,99 +67,6 @@ export default function HomePage() {
                 never lose track of important content again.
               </p>
             </div>
-
-            {/* Only show animated testimonials if we have 5 or more */}
-            {testimonials && testimonials.length >= 5 && (
-              <div className="relative overflow-hidden w-full">
-                {/* Fade overlays */}
-                <div className="absolute left-0 top-0 w-32 h-full bg-gradient-to-r from-muted/30 to-transparent z-10 pointer-events-none" />
-                <div className="absolute right-0 top-0 w-32 h-full bg-gradient-to-l from-muted/30 to-transparent z-10 pointer-events-none" />
-
-                <motion.div
-                  className="flex gap-6"
-                  animate={{
-                    x: [0, -(380 + 24) * testimonials.length],
-                  }}
-                  transition={{
-                    x: {
-                      repeat: Infinity,
-                      repeatType: "loop",
-                      duration: 40,
-                      ease: "linear",
-                    },
-                  }}
-                  style={{ width: "fit-content" }}
-                >
-                  {[...testimonials, ...testimonials, ...testimonials].map(
-                    (testimonial, index) => (
-                      <motion.div
-                        key={index}
-                        className="w-[380px] bg-card p-6 rounded-lg shadow-md border flex-shrink-0"
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{
-                          duration: 0.5,
-                          delay: (index % testimonials.length) * 0.1,
-                        }}
-                        whileHover={{
-                          scale: 1.02,
-                          y: -5,
-                          transition: { duration: 0.2 },
-                        }}
-                      >
-                        {/* User Profile & Name */}
-                        <div className="flex items-center mb-4">
-                          <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mr-3">
-                            <Avatar className="h-full w-full">
-                              <AvatarImage
-                                src={testimonial.user.avatar_url}
-                                alt={testimonial.user.name}
-                              />
-                              <AvatarFallback>
-                                {testimonial.user.name
-                                  ? testimonial.user.name
-                                      .charAt(0)
-                                      .toUpperCase()
-                                  : "U"}
-                              </AvatarFallback>
-                            </Avatar>
-                          </div>
-                          <div>
-                            <p className="font-semibold text-foreground">
-                              {testimonial.user.name}
-                            </p>
-                          </div>
-                        </div>
-
-                        {/* Rating */}
-                        <div className="flex items-center mb-4">
-                          {[...Array(testimonial.rating)].map((_, i) => (
-                            <motion.div
-                              key={i}
-                              initial={{ opacity: 0, scale: 0 }}
-                              animate={{ opacity: 1, scale: 1 }}
-                              transition={{
-                                delay:
-                                  0.1 * i +
-                                  (index % testimonials.length) * 0.05,
-                                duration: 0.3,
-                              }}
-                            >
-                              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                            </motion.div>
-                          ))}
-                        </div>
-
-                        {/* Feedback */}
-                        <p className="text-foreground italic leading-relaxed">
-                          "{testimonial.feedback}"
-                        </p>
-                      </motion.div>
-                    )
-                  )}
-                </motion.div>
-              </div>
-            )}
           </div>
         </AnimatedSection>
       </main>
