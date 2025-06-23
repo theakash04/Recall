@@ -1,9 +1,5 @@
 # 📘 Recall
-
-
-
 [!demo](https://github.com/user-attachments/assets/f83d86ab-4baa-43dc-b813-4e465ab7fb94)
-
 > **Smart bookmarks powered by AI.**  
 > Save websites, documents, and articles — then Search it later.
 > Recall scrapes, stores, and understands everything so you don’t have to.
@@ -29,7 +25,7 @@ I built Recall to learn more about modern search systems — like semantic searc
 - **Frontend**: Next.js
 - **Backend**: Express.js
 - **Auth & DB**: Supabase (Postgres + Auth) with `pgvector`
-- **Worker**: Redis (upstash) + BullMQ
+- **Worker**: Redis + BullMQ
 - **Embedding**: Google AI
 - **Scraping**: Mozilla Readability
 - **Containerized**: Docker (3 services + Compose)
