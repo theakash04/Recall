@@ -47,7 +47,7 @@ export const metadata: Metadata = {
     creator: "@theakash04",
     images: [
       {
-        url: "https://recall.com/placeholder-dark.png",
+        url: "/placeholder-dark.png",
       },
     ],
   },
