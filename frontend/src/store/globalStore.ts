@@ -21,7 +21,7 @@ export const useGlobalStore = create<globalStoreType>()(
       isGlobalLoading: false,
       isServerError: false,
       globalSetting: {
-        default_search_type: "keyword",
+        default_search_type: "semantic",
       },
       editGlobalSetting(state) {
         try {

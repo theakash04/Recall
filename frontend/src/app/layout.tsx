@@ -45,7 +45,11 @@ export const metadata: Metadata = {
     title: "Recall - Smart Bookmark Manager",
     description: "Never forget what you read. Smart bookmarks with AI recall.",
     creator: "@theakash04",
-    images: ["/placeholder-dark.png"],
+    images: [
+      {
+        url: "https://recall.com/placeholder-dark.png",
+      },
+    ],
   },
   robots: {
     index: true,

@@ -243,13 +243,18 @@ export default function Bookmarks() {
   }, [fetchNextPage, hasNextPage, isFetchingNextPage, searchTerm]);
 
   const handleSearch = useCallback(async () => {
-    const query = searchQuery.trim();
+    let query = searchQuery.trim();
 
     if (!query) {
       setIsUrlNotFound(null);
       setSearchTerm(null);
       toast.warning("Please type something to search for");
       return;
+    }
+    const mightBeURL = /\./.test(query) || query.startsWith("https");
+
+    if (mightBeURL) {
+      query = query.split("#")[0];
     }
 
     const isUrlSearch = isURL(query);
